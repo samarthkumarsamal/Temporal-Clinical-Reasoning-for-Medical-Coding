@@ -1,761 +1,5001 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b14" />
+  <meta name="color-scheme" content="dark light" />
+
+  <title>Temporal Clinical Reasoning for Medical Coding | CSCI 5541</title>
+
   <meta
     name="description"
-    content="Temporal Clinical Reasoning for Medical Coding — a CSCI 5541 NLP project at the University of Minnesota for joint ICD and CPT prediction from longitudinal clinical notes."
+    content="Temporal Clinical Reasoning for Medical Coding: a University of Minnesota CSCI 5541 NLP project for joint ICD and CPT prediction from longitudinal clinical notes."
   />
-  <meta name="theme-color" content="#111827" />
+  <meta
+    name="keywords"
+    content="Clinical NLP, Medical Coding, ICD, CPT, BioClinicalBERT, Longformer, LSTM, MIMIC-III, University of Minnesota"
+  />
+  <meta name="robots" content="index, follow" />
 
+  <meta property="og:type" content="website" />
   <meta property="og:title" content="Temporal Clinical Reasoning for Medical Coding" />
   <meta
     property="og:description"
-    content="Temporal clinical reasoning for joint ICD and CPT medical coding from longitudinal EHR notes."
+    content="Temporal clinical reasoning for joint ICD and CPT prediction from longitudinal EHR notes."
   />
   <meta property="og:image" content="./files/figure1.png" />
-  <meta property="og:type" content="website" />
 
-  <title>Temporal Clinical Reasoning for Medical Coding</title>
+  <style>
+    /* =========================================================
+       1. DESIGN SYSTEM
+       Single-file GitHub Pages website
+       ========================================================= */
 
-  <link rel="stylesheet" href="./files/styles.css" />
-  <script src="./files/main.js" defer></script>
+    :root {
+      --max-width: 1180px;
+      --nav-height: 74px;
+      --section-space: clamp(5rem, 9vw, 8rem);
+
+      --radius-sm: 14px;
+      --radius-md: 20px;
+      --radius-lg: 28px;
+      --radius-xl: 36px;
+
+      --fast: 180ms ease;
+      --normal: 300ms ease;
+      --slow: 650ms cubic-bezier(0.22, 1, 0.36, 1);
+
+      --font:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #060a12;
+      --bg-alt: #0a101b;
+
+      --card: rgba(13, 21, 35, 0.78);
+      --card-solid: #0d1624;
+      --soft: rgba(255, 255, 255, 0.05);
+
+      --border: rgba(221, 230, 242, 0.14);
+      --border-strong: rgba(255, 204, 51, 0.34);
+
+      --text: #f5f7fb;
+      --text-soft: #d5dbe5;
+      --muted: #98a6b8;
+
+      --primary: #ffcc33;
+      --primary-strong: #f2b900;
+      --primary-soft: rgba(255, 204, 51, 0.10);
+
+      --secondary: #c81e45;
+      --secondary-soft: rgba(200, 30, 69, 0.12);
+
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, 0.11);
+
+      --success: #34d399;
+
+      --nav-bg: rgba(6, 10, 18, 0.84);
+      --shadow: 0 26px 75px rgba(0, 0, 0, 0.30);
+      --shadow-small: 0 14px 38px rgba(0, 0, 0, 0.18);
+
+      --grid: rgba(190, 205, 226, 0.045);
+
+      --table-header: rgba(255, 255, 255, 0.035);
+      --table-row: rgba(255, 255, 255, 0.018);
+      --table-highlight: rgba(255, 204, 51, 0.055);
+    }
+
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-alt: #eef2f7;
+
+      --card: rgba(255, 255, 255, 0.88);
+      --card-solid: #ffffff;
+      --soft: rgba(81, 20, 39, 0.045);
+
+      --border: rgba(68, 76, 91, 0.14);
+      --border-strong: rgba(122, 0, 25, 0.25);
+
+      --text: #151923;
+      --text-soft: #343b49;
+      --muted: #687386;
+
+      --primary: #7a0019;
+      --primary-strong: #5f0014;
+      --primary-soft: rgba(122, 0, 25, 0.075);
+
+      --secondary: #a8102f;
+      --secondary-soft: rgba(168, 16, 47, 0.07);
+
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.07);
+
+      --success: #047857;
+
+      --nav-bg: rgba(248, 250, 252, 0.88);
+      --shadow: 0 24px 70px rgba(47, 54, 68, 0.13);
+      --shadow-small: 0 12px 34px rgba(47, 54, 68, 0.08);
+
+      --grid: rgba(50, 60, 76, 0.045);
+
+      --table-header: rgba(122, 0, 25, 0.045);
+      --table-row: rgba(0, 0, 0, 0.014);
+      --table-highlight: rgba(122, 0, 25, 0.05);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--nav-height) + 22px);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      overflow-x: hidden;
+
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 3%, var(--secondary-soft), transparent 28rem),
+        radial-gradient(circle at 92% 18%, var(--accent-soft), transparent 30rem),
+        radial-gradient(circle at 45% 90%, var(--primary-soft), transparent 32rem),
+        var(--bg);
+
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.7;
+
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+
+      background-size: 54px 54px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+      -webkit-mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+
+    .dynamic-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+
+      width: 100%;
+      height: 100%;
+
+      pointer-events: none;
+      opacity: 0.72;
+    }
+
+    html[data-theme="light"] .dynamic-background {
+      opacity: 0.34;
+    }
+
+    main,
+    .site-footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    ::selection {
+      color: #111;
+      background: #ffcc33;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p,
+    ul,
+    ol,
+    figure {
+      margin-top: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      color: var(--text);
+      line-height: 1.14;
+      letter-spacing: -0.035em;
+    }
+
+    p {
+      color: var(--text-soft);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    button {
+      color: inherit;
+      font: inherit;
+    }
+
+    code {
+      padding: 0.1rem 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--primary);
+      background: var(--soft);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    section {
+      position: relative;
+      padding: var(--section-space) 0;
+    }
+
+    .container {
+      width: min(var(--max-width), calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    .section-alt {
+      background:
+        linear-gradient(
+          180deg,
+          transparent,
+          var(--soft),
+          transparent
+        );
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 0.8rem;
+      left: 0.8rem;
+      z-index: 9999;
+
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+
+      color: #111;
+      background: #ffcc33;
+      font-weight: 850;
+
+      transform: translateY(-160%);
+      transition: transform var(--fast);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 4px;
+    }
+
+    /* =========================================================
+       2. REUSABLE COMPONENTS
+       ========================================================= */
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+
+      margin-bottom: 0.9rem;
+
+      color: var(--primary);
+      font-size: 0.77rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 1.8rem;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .gradient-text {
+      background:
+        linear-gradient(
+          110deg,
+          var(--primary),
+          var(--secondary) 55%,
+          var(--accent)
+        );
+
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.58fr);
+      gap: 2rem;
+      align-items: end;
+
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      max-width: 820px;
+      margin-bottom: 0;
+      font-size: clamp(2.25rem, 5vw, 4.2rem);
+    }
+
+    .section-description {
+      max-width: 600px;
+      margin: 0;
+
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--card);
+      box-shadow: var(--shadow-small);
+
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.055),
+          transparent 38%
+        );
+    }
+
+    .lift {
+      transition:
+        transform var(--normal),
+        border-color var(--normal),
+        box-shadow var(--normal);
+    }
+
+    .lift:hover {
+      transform: translateY(-7px);
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+
+      padding: 0.8rem 1.1rem;
+
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 820;
+      line-height: 1;
+
+      transition:
+        transform var(--fast),
+        border-color var(--fast),
+        background var(--fast),
+        box-shadow var(--fast);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-primary {
+      color: #111;
+      background:
+        linear-gradient(
+          135deg,
+          #ffcc33,
+          #f5a623
+        );
+      box-shadow: 0 12px 34px rgba(255, 204, 51, 0.12);
+    }
+
+    html[data-theme="light"] .button-primary {
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          #7a0019,
+          #a8102f
+        );
+    }
+
+    .button-secondary {
+      border-color: var(--border);
+      background: var(--soft);
+    }
+
+    .button-secondary:hover {
+      border-color: var(--border-strong);
+      background: var(--primary-soft);
+    }
+
+    .text-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+
+      color: var(--primary);
+      font-size: 0.9rem;
+      font-weight: 820;
+    }
+
+    .text-link:hover {
+      color: var(--text);
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .tag {
+      display: inline-flex;
+      min-height: 32px;
+      align-items: center;
+
+      padding: 0.4rem 0.7rem;
+
+      border: 1px solid var(--border);
+      border-radius: 999px;
+
+      color: var(--text-soft);
+      background: var(--soft);
+
+      font-size: 0.77rem;
+      font-weight: 720;
+    }
+
+    .tag.primary {
+      border-color: var(--border-strong);
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .clean-list {
+      display: grid;
+      gap: 0.7rem;
+
+      padding: 0;
+      margin: 0;
+
+      list-style: none;
+    }
+
+    .clean-list li {
+      position: relative;
+      padding-left: 1.35rem;
+      color: var(--text-soft);
+    }
+
+    .clean-list li::before {
+      content: "";
+      position: absolute;
+      top: 0.72rem;
+      left: 0;
+
+      width: 0.46rem;
+      height: 0.46rem;
+
+      border-radius: 50%;
+      background:
+        linear-gradient(
+          135deg,
+          var(--primary),
+          var(--secondary)
+        );
+
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+
+      transition:
+        opacity var(--slow),
+        transform var(--slow);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =========================================================
+       3. AMBIENT MOVEMENT
+       ========================================================= */
+
+    .orb {
+      position: fixed;
+      z-index: 0;
+
+      border-radius: 50%;
+      filter: blur(100px);
+
+      pointer-events: none;
+      opacity: 0.16;
+
+      animation: drift 15s ease-in-out infinite alternate;
+    }
+
+    .orb.one {
+      top: 3rem;
+      left: -10rem;
+      width: 28rem;
+      height: 28rem;
+      background: var(--secondary);
+    }
+
+    .orb.two {
+      top: 38%;
+      right: -12rem;
+      width: 30rem;
+      height: 30rem;
+      background: var(--accent);
+      animation-duration: 19s;
+    }
+
+    .orb.three {
+      bottom: -12rem;
+      left: 40%;
+      width: 26rem;
+      height: 26rem;
+      background: var(--primary);
+      animation-duration: 21s;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translate3d(0, 0, 0) scale(0.94);
+      }
+
+      to {
+        transform: translate3d(2.5rem, -1.8rem, 0) scale(1.08);
+      }
+    }
+
+    /* =========================================================
+       4. NAVIGATION
+       ========================================================= */
+
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+
+      width: 100%;
+
+      border-bottom: 1px solid transparent;
+
+      transition:
+        background var(--normal),
+        border-color var(--normal),
+        box-shadow var(--normal);
+    }
+
+    .site-header.scrolled {
+      border-color: var(--border);
+      background: var(--nav-bg);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .nav-wrap {
+      display: flex;
+      min-height: var(--nav-height);
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+
+      min-width: max-content;
+
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 13px;
+
+      color: #111;
+      background:
+        linear-gradient(
+          135deg,
+          #ffcc33,
+          #f5a623
+        );
+
+      font-size: 0.72rem;
+      font-weight: 950;
+    }
+
+    html[data-theme="light"] .brand-mark {
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          #7a0019,
+          #a8102f
+        );
+    }
+
+    .brand-name {
+      display: grid;
+      line-height: 1.1;
+    }
+
+    .brand-name strong {
+      font-size: 0.9rem;
+    }
+
+    .brand-name small {
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.66rem;
+      font-weight: 650;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 0.1rem;
+
+      padding: 0;
+      margin: 0 0 0 auto;
+
+      list-style: none;
+    }
+
+    .nav-link {
+      position: relative;
+
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+
+      padding: 0.55rem 0.66rem;
+
+      border-radius: 11px;
+
+      color: var(--muted);
+      font-size: 0.79rem;
+      font-weight: 760;
+
+      transition:
+        color var(--fast),
+        background var(--fast);
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--text);
+      background: var(--soft);
+    }
+
+    .nav-link.active::after {
+      content: "";
+
+      position: absolute;
+      right: 0.7rem;
+      bottom: 0.3rem;
+      left: 0.7rem;
+
+      height: 2px;
+
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .icon-button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+
+      border: 1px solid var(--border);
+      border-radius: 12px;
+
+      color: var(--text-soft);
+      background: var(--soft);
+
+      cursor: pointer;
+      font-size: 1rem;
+
+      transition:
+        transform var(--fast),
+        color var(--fast),
+        border-color var(--fast),
+        background var(--fast);
+    }
+
+    .icon-button:hover {
+      color: var(--primary);
+      border-color: var(--border-strong);
+      background: var(--primary-soft);
+      transform: translateY(-2px);
+    }
+
+    .menu-toggle {
+      display: none;
+    }
+
+    .theme-light-icon {
+      display: none;
+    }
+
+    html[data-theme="light"] .theme-dark-icon {
+      display: none;
+    }
+
+    html[data-theme="light"] .theme-light-icon {
+      display: inline;
+    }
+
+    /* =========================================================
+       5. HERO
+       ========================================================= */
+
+    .hero {
+      display: flex;
+      min-height: 100svh;
+      align-items: center;
+
+      padding-top: calc(var(--nav-height) + 4rem);
+      padding-bottom: 4rem;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1.12fr)
+        minmax(340px, 0.72fr);
+
+      gap: clamp(2.5rem, 7vw, 6rem);
+      align-items: center;
+    }
+
+    .project-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+
+      margin-bottom: 1.35rem;
+      padding: 0.52rem 0.82rem;
+
+      border: 1px solid rgba(52, 211, 153, 0.24);
+      border-radius: 999px;
+
+      color: var(--text-soft);
+      background: rgba(52, 211, 153, 0.07);
+
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+
+    .status-dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      flex: 0 0 auto;
+
+      border-radius: 50%;
+      background: var(--success);
+
+      box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.13);
+    }
+
+    .hero h1 {
+      max-width: 900px;
+
+      margin-bottom: 1.25rem;
+
+      font-size: clamp(3rem, 7.5vw, 6.45rem);
+      line-height: 0.98;
+      letter-spacing: -0.065em;
+    }
+
+    .hero-role {
+      max-width: 800px;
+
+      margin-bottom: 1.15rem;
+
+      color: var(--text);
+
+      font-size: clamp(1.08rem, 2vw, 1.45rem);
+      font-weight: 740;
+      letter-spacing: -0.015em;
+    }
+
+    .hero-description {
+      max-width: 760px;
+
+      margin-bottom: 1.8rem;
+
+      color: var(--muted);
+
+      font-size: clamp(1rem, 1.6vw, 1.1rem);
+    }
+
+    .hero-description strong {
+      color: var(--text-soft);
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1.15rem;
+
+      padding: 0;
+      margin: 1.55rem 0 0;
+
+      list-style: none;
+
+      color: var(--muted);
+
+      font-size: 0.86rem;
+      font-weight: 680;
+    }
+
+    .hero-meta li {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.42rem;
+    }
+
+    .hero-meta b {
+      color: var(--primary);
+    }
+
+    .hero-visual {
+      position: relative;
+
+      padding: 1rem;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+
+      background:
+        linear-gradient(
+          145deg,
+          var(--card),
+          var(--soft)
+        );
+
+      box-shadow: var(--shadow);
+    }
+
+    .hero-visual::before {
+      content: "";
+
+      position: absolute;
+      inset: -1px;
+      z-index: -1;
+
+      border-radius: var(--radius-xl);
+
+      background:
+        linear-gradient(
+          145deg,
+          var(--primary),
+          transparent 32%,
+          transparent 70%,
+          var(--accent)
+        );
+
+      opacity: 0.38;
+    }
+
+    .timeline-window {
+      position: relative;
+
+      overflow: hidden;
+
+      min-height: 450px;
+      padding: 1.5rem;
+
+      border-radius: calc(var(--radius-xl) - 8px);
+
+      background:
+        radial-gradient(circle at 15% 10%, var(--primary-soft), transparent 35%),
+        radial-gradient(circle at 90% 85%, var(--accent-soft), transparent 38%),
+        var(--card-solid);
+    }
+
+    .window-label {
+      margin-bottom: 1.4rem;
+
+      color: var(--muted);
+
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .timeline-track {
+      position: relative;
+
+      display: grid;
+      gap: 1rem;
+
+      padding-left: 1rem;
+    }
+
+    .timeline-track::before {
+      content: "";
+
+      position: absolute;
+      top: 1.1rem;
+      bottom: 1.1rem;
+      left: 1.2rem;
+
+      width: 2px;
+
+      background:
+        linear-gradient(
+          var(--primary),
+          var(--secondary),
+          var(--accent)
+        );
+
+      opacity: 0.5;
+    }
+
+    .timeline-event {
+      position: relative;
+
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 0.9rem;
+      align-items: center;
+    }
+
+    .timeline-time {
+      z-index: 1;
+
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+
+      border: 1px solid var(--border);
+      border-radius: 13px;
+
+      color: var(--primary);
+      background: var(--card-solid);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .timeline-event div:last-child {
+      padding: 0.85rem 1rem;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+
+      background: var(--soft);
+    }
+
+    .timeline-event strong,
+    .timeline-event small {
+      display: block;
+    }
+
+    .timeline-event strong {
+      margin-bottom: 0.12rem;
+      font-size: 0.88rem;
+    }
+
+    .timeline-event small {
+      color: var(--muted);
+      font-size: 0.73rem;
+    }
+
+    .reasoning-block {
+      margin-top: 1.25rem;
+      padding: 1rem;
+
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--primary-soft),
+          var(--secondary-soft)
+        );
+
+      text-align: center;
+    }
+
+    .reasoning-block span {
+      display: block;
+
+      color: var(--muted);
+
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .reasoning-block strong {
+      display: block;
+
+      margin: 0.3rem 0;
+
+      font-size: 1.08rem;
+    }
+
+    .prediction-chips {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.7rem;
+
+      margin-top: 0.8rem;
+    }
+
+    .prediction-chip {
+      padding: 0.75rem;
+
+      border: 1px solid var(--border);
+      border-radius: 12px;
+
+      background: var(--soft);
+
+      text-align: left;
+    }
+
+    .prediction-chip b,
+    .prediction-chip span {
+      display: block;
+    }
+
+    .prediction-chip b {
+      color: var(--primary);
+      font-size: 0.75rem;
+    }
+
+    .prediction-chip span {
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    /* =========================================================
+       6. PROJECT METRICS
+       ========================================================= */
+
+    .impact {
+      padding: 0 0 2rem;
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      overflow: hidden;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+
+      background: var(--card);
+      box-shadow: var(--shadow-small);
+
+      backdrop-filter: blur(16px);
+    }
+
+    .impact-item {
+      position: relative;
+      padding: 1.6rem;
+    }
+
+    .impact-item:not(:last-child)::after {
+      content: "";
+
+      position: absolute;
+      top: 1.2rem;
+      right: 0;
+      bottom: 1.2rem;
+
+      width: 1px;
+
+      background: var(--border);
+    }
+
+    .impact-number {
+      display: block;
+
+      margin-bottom: 0.3rem;
+
+      color: var(--primary);
+
+      font-size: clamp(1.8rem, 4vw, 2.55rem);
+      font-weight: 950;
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    .impact-label {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    /* =========================================================
+       7. OVERVIEW / ABSTRACT
+       ========================================================= */
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1.08fr)
+        minmax(320px, 0.72fr);
+
+      gap: 1.4rem;
+      align-items: stretch;
+    }
+
+    .abstract-card {
+      padding: clamp(1.6rem, 4vw, 2.6rem);
+    }
+
+    .abstract-card h3 {
+      margin-bottom: 1rem;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+    }
+
+    .abstract-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .overview-aside {
+      display: grid;
+      gap: 1.4rem;
+    }
+
+    .info-card {
+      padding: 1.5rem;
+    }
+
+    .info-card h3 {
+      margin-bottom: 1rem;
+      font-size: 1.08rem;
+    }
+
+    /* =========================================================
+       8. FRAMEWORK FIGURE
+       ========================================================= */
+
+    .figure-card {
+      padding: 1rem;
+    }
+
+    .figure-window-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      min-height: 44px;
+      padding: 0 0.5rem;
+
+      color: var(--muted);
+
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.72rem;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 0.42rem;
+    }
+
+    .window-dot {
+      width: 0.62rem;
+      height: 0.62rem;
+      border-radius: 50%;
+    }
+
+    .window-dot:nth-child(1) {
+      background: #fb7185;
+    }
+
+    .window-dot:nth-child(2) {
+      background: #fbbf24;
+    }
+
+    .window-dot:nth-child(3) {
+      background: #34d399;
+    }
+
+    .figure-card img {
+      width: 100%;
+      height: auto;
+
+      border-radius: calc(var(--radius-lg) - 9px);
+
+      background: white;
+    }
+
+    .figure-card figcaption {
+      padding: 1rem 0.6rem 0.35rem;
+
+      color: var(--muted);
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    /* =========================================================
+       9. APPROACH / MODEL CARDS
+       ========================================================= */
+
+    .model-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 1.4rem;
+    }
+
+    .model-card {
+      display: flex;
+      min-height: 100%;
+      flex-direction: column;
+
+      padding: clamp(1.5rem, 3vw, 2rem);
+    }
+
+    .model-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+
+      margin-bottom: 1.3rem;
+    }
+
+    .index {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 15px;
+
+      color: var(--primary);
+      background: var(--primary-soft);
+
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .model-label {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 0.38rem 0.62rem;
+
+      border: 1px solid var(--border);
+      border-radius: 999px;
+
+      color: var(--muted);
+      background: var(--soft);
+
+      font-size: 0.71rem;
+      font-weight: 800;
+    }
+
+    .model-card.featured {
+      border-color: var(--border-strong);
+
+      background:
+        radial-gradient(circle at 90% 0%, var(--primary-soft), transparent 18rem),
+        var(--card);
+    }
+
+    .model-card h3 {
+      margin-bottom: 0.5rem;
+
+      font-size: clamp(1.3rem, 3vw, 1.7rem);
+    }
+
+    .model-subtitle {
+      margin-bottom: 1.2rem;
+
+      color: var(--primary);
+
+      font-size: 0.82rem;
+      font-weight: 750;
+    }
+
+    .model-card .clean-list {
+      margin-bottom: 1.4rem;
+    }
+
+    .model-card .tags {
+      margin-top: auto;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+
+      gap: 0.75rem;
+
+      margin-top: 1.4rem;
+      padding: 1rem;
+    }
+
+    .pipeline-step {
+      position: relative;
+
+      padding: 1rem;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+
+      background: var(--soft);
+    }
+
+    .pipeline-step:not(:last-child)::after {
+      content: "→";
+
+      position: absolute;
+      top: 50%;
+      right: -0.72rem;
+      z-index: 2;
+
+      color: var(--primary);
+
+      font-weight: 900;
+
+      transform: translateY(-50%);
+    }
+
+    .pipeline-step b,
+    .pipeline-step span {
+      display: block;
+    }
+
+    .pipeline-step b {
+      margin-bottom: 0.25rem;
+      font-size: 0.78rem;
+    }
+
+    .pipeline-step span {
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    /* =========================================================
+       10. RESULTS
+       ========================================================= */
+
+    .results-highlights {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 1.2rem;
+
+      margin-bottom: 1.4rem;
+    }
+
+    .result-card {
+      padding: 1.5rem;
+    }
+
+    .result-card span {
+      display: block;
+
+      color: var(--muted);
+
+      font-size: 0.73rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .result-card strong {
+      display: block;
+
+      margin: 0.45rem 0 0.2rem;
+
+      color: var(--primary);
+
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .result-card p {
+      margin: 0;
+
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .table-card {
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1.5rem;
+
+      padding: 1.5rem 1.6rem;
+
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-header h3 {
+      margin-bottom: 0;
+      font-size: 1.25rem;
+    }
+
+    .table-header p {
+      margin-bottom: 0.25rem;
+
+      color: var(--primary);
+
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .table-legend {
+      color: var(--muted);
+      font-size: 0.73rem;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 940px;
+
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 1rem;
+
+      border-bottom: 1px solid var(--border);
+
+      text-align: center;
+    }
+
+    th {
+      color: var(--muted);
+      background: var(--table-header);
+
+      font-size: 0.67rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: var(--text-soft);
+      background: var(--table-row);
+
+      font-size: 0.83rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th:first-child,
+    td:first-child {
+      padding-left: 1.6rem;
+      text-align: left;
+    }
+
+    td:first-child strong,
+    td:first-child small {
+      display: block;
+    }
+
+    td:first-child small {
+      margin-top: 0.2rem;
+
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+
+    .temporal-row td {
+      background: var(--table-highlight);
+    }
+
+    .best {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .findings-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 1rem;
+
+      margin-top: 1.4rem;
+    }
+
+    .finding-card {
+      min-height: 210px;
+      padding: 1.4rem;
+    }
+
+    .finding-number {
+      display: inline-flex;
+
+      margin-bottom: 2.4rem;
+
+      color: var(--primary);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+    }
+
+    .finding-card h3 {
+      margin-bottom: 0.55rem;
+      font-size: 1.05rem;
+    }
+
+    .finding-card p {
+      margin-bottom: 0;
+
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    /* =========================================================
+       11. LIMITATIONS / FUTURE WORK
+       ========================================================= */
+
+    .future-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 1.4rem;
+    }
+
+    .future-card {
+      padding: clamp(1.5rem, 4vw, 2.3rem);
+    }
+
+    .future-card.accent {
+      border-color: var(--border-strong);
+
+      background:
+        radial-gradient(circle at 100% 0%, var(--primary-soft), transparent 22rem),
+        var(--card);
+    }
+
+    .future-card h3 {
+      margin-bottom: 1.1rem;
+      font-size: 1.45rem;
+    }
+
+    /* =========================================================
+       12. TEAM
+       Every member photo uses the same square dimensions.
+       ========================================================= */
+
+    .team-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 1.2rem;
+      align-items: stretch;
+    }
+
+    .team-card {
+      display: flex;
+      min-height: 100%;
+      flex-direction: column;
+
+      padding: 1rem;
+    }
+
+    .team-photo-wrap {
+      position: relative;
+
+      width: 100%;
+      aspect-ratio: 1 / 1;
+
+      overflow: hidden;
+
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius-lg) - 8px);
+
+      background: var(--card-solid);
+    }
+
+    .team-photo-wrap img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+      object-position: center top;
+
+      transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .team-card:hover .team-photo-wrap img {
+      transform: scale(1.035);
+    }
+
+    .team-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+
+      padding: 1.1rem 0.45rem 0.45rem;
+    }
+
+    .team-content h3 {
+      margin-bottom: 0.35rem;
+      font-size: 1.08rem;
+    }
+
+    .team-role {
+      margin-bottom: 0.75rem;
+
+      color: var(--primary);
+
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .team-content p {
+      margin-bottom: 0;
+
+      color: var(--muted);
+      font-size: 0.79rem;
+    }
+
+    /* =========================================================
+       13. REFERENCES
+       ========================================================= */
+
+    .references-card {
+      padding: clamp(1.4rem, 4vw, 2.3rem);
+    }
+
+    .references-list {
+      display: grid;
+      gap: 0;
+
+      margin: 0;
+      padding-left: 1.4rem;
+    }
+
+    .references-list li {
+      padding: 0.9rem 0 0.9rem 0.45rem;
+
+      border-top: 1px solid var(--border);
+
+      color: var(--muted);
+      font-size: 0.87rem;
+    }
+
+    .references-list li:first-child {
+      border-top: 0;
+    }
+
+    /* =========================================================
+       14. FOOTER / SCROLL TOP
+       ========================================================= */
+
+    .site-footer {
+      padding: 2rem 0 2.4rem;
+
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .footer-inner p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 0.85rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    .scroll-top {
+      position: fixed;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      z-index: 900;
+
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 15px;
+
+      color: #111;
+      background:
+        linear-gradient(
+          135deg,
+          #ffcc33,
+          #f5a623
+        );
+
+      box-shadow: var(--shadow);
+
+      cursor: pointer;
+
+      opacity: 0;
+      visibility: hidden;
+
+      transform: translateY(14px);
+
+      transition:
+        opacity var(--normal),
+        visibility var(--normal),
+        transform var(--normal);
+    }
+
+    html[data-theme="light"] .scroll-top {
+      color: white;
+      background:
+        linear-gradient(
+          135deg,
+          #7a0019,
+          #a8102f
+        );
+    }
+
+    .scroll-top.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    /* =========================================================
+       15. RESPONSIVE DESIGN
+       ========================================================= */
+
+    @media (max-width: 1080px) {
+      .nav-link {
+        padding-inline: 0.48rem;
+        font-size: 0.74rem;
+      }
+
+      .pipeline {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+      .pipeline-step:nth-child(3)::after,
+      .pipeline-step:nth-child(6)::after {
+        display: none;
+      }
+
+      .findings-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 930px) {
+      :root {
+        --nav-height: 70px;
+      }
+
+      .menu-toggle {
+        display: grid;
+      }
+
+      .nav-menu {
+        position: fixed;
+        top: calc(var(--nav-height) + 0.6rem);
+        right: 1.25rem;
+        left: 1.25rem;
+
+        display: grid;
+
+        max-height:
+          calc(
+            100vh -
+            var(--nav-height) -
+            2rem
+          );
+
+        padding: 0.75rem;
+        overflow-y: auto;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+
+        background: var(--nav-bg);
+        box-shadow: var(--shadow);
+
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+
+        opacity: 0;
+        visibility: hidden;
+
+        transform:
+          translateY(-12px)
+          scale(0.98);
+
+        transition:
+          opacity var(--normal),
+          visibility var(--normal),
+          transform var(--normal);
+      }
+
+      .nav-menu.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+      }
+
+      .nav-link {
+        width: 100%;
+        min-height: 46px;
+
+        padding: 0.7rem 0.85rem;
+
+        font-size: 0.9rem;
+      }
+
+      .nav-link.active::after {
+        top: 50%;
+        right: 0.9rem;
+        bottom: auto;
+        left: auto;
+
+        width: 0.42rem;
+        height: 0.42rem;
+
+        transform: translateY(-50%);
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: calc(var(--nav-height) + 5rem);
+      }
+
+      .hero-grid,
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy {
+        text-align: center;
+      }
+
+      .hero-role,
+      .hero-description {
+        margin-inline: auto;
+      }
+
+      .hero .buttons,
+      .hero-meta {
+        justify-content: center;
+      }
+
+      .hero-visual {
+        width: min(100%, 570px);
+        margin-inline: auto;
+      }
+
+      .section-heading {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .impact-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .impact-item:nth-child(2)::after {
+        display: none;
+      }
+
+      .impact-item:nth-child(-n + 2) {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .model-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .results-highlights {
+        grid-template-columns: 1fr;
+      }
+
+      .team-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        width:
+          min(
+            var(--max-width),
+            calc(100% - 1.4rem)
+          );
+      }
+
+      section {
+        padding: 4.5rem 0;
+      }
+
+      .brand-name small {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(3rem, 15vw, 5rem);
+      }
+
+      .timeline-window {
+        min-height: auto;
+      }
+
+      .future-grid,
+      .team-grid,
+      .findings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-step::after {
+        display: none !important;
+      }
+
+      .table-header {
+        display: grid;
+        align-items: start;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding-top:
+          calc(
+            var(--nav-height) +
+            3.5rem
+          );
+      }
+
+      .hero .buttons,
+      .hero .button {
+        width: 100%;
+      }
+
+      .impact-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .impact-item:not(:last-child) {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .impact-item::after {
+        display: none;
+      }
+
+      .prediction-chips {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <!-- Dynamic background -->
-  <canvas id="network-canvas" aria-hidden="true"></canvas>
-  <div class="background-gradient" aria-hidden="true"></div>
-  <div class="noise-overlay" aria-hidden="true"></div>
-  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <a class="skip-link" href="#main-content">Skip to content</a>
+  <!-- Dynamic professional particle background -->
+  <canvas
+    class="dynamic-background"
+    id="dynamicBackground"
+    aria-hidden="true"
+  ></canvas>
 
-  <!-- Navigation -->
-  <header class="site-header" id="top">
-    <nav class="nav-shell" aria-label="Primary navigation">
-      <a class="brand" href="#top" aria-label="Temporal Clinical Reasoning home">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 48 48" role="img">
-            <path d="M12 9h24a3 3 0 0 1 3 3v24a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3V12a3 3 0 0 1 3-3Z"/>
-            <path d="M16 24h6l3-7 5 14 3-7h4"/>
-          </svg>
-        </span>
-        <span>
-          <strong>TCRMC</strong>
-          <small>Clinical NLP Research</small>
-        </span>
-      </a>
+  <div class="orb one" aria-hidden="true"></div>
+  <div class="orb two" aria-hidden="true"></div>
+  <div class="orb three" aria-hidden="true"></div>
 
-      <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span class="sr-only">Toggle navigation</span>
-      </button>
-
-      <div class="nav-links" id="nav-links">
-        <a href="#overview">Overview</a>
-        <a href="#approach">Approach</a>
-        <a href="#results">Results</a>
-        <a href="#team">Team</a>
-        <a href="#references">References</a>
-      </div>
-
+  <!-- =========================================================
+       NAVIGATION
+       ========================================================= -->
+  <header class="site-header" id="siteHeader">
+    <div class="container nav-wrap">
       <a
-        class="button button-small nav-cta"
-        href="https://github.com/samarthkumarsamal/Temporal-Clinical-Reasoning-for-Medical-Coding"
-        target="_blank"
-        rel="noopener noreferrer"
+        class="brand"
+        href="#home"
+        aria-label="Go to project home"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.6.1-3.1 0 0 1-.3 3.2 1.2A11 11 0 0 1 12 6.4c1 0 2 .1 2.9.4 2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.5-2.8 5.5-5.5 5.8.4.4.8 1.1.8 2.1v2.8c0 .4.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/>
-        </svg>
-        GitHub
+        <span
+          class="brand-mark"
+          aria-hidden="true"
+        >TCR</span>
+
+        <span class="brand-name">
+          <strong>Temporal Clinical Reasoning</strong>
+          <small>Medical Coding · Clinical NLP</small>
+        </span>
       </a>
-    </nav>
+
+      <nav aria-label="Primary navigation">
+        <ul
+          class="nav-menu"
+          id="navMenu"
+        >
+          <li>
+            <a
+              class="nav-link active"
+              href="#home"
+            >Home</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#overview"
+            >Overview</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#framework"
+            >Framework</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#approach"
+            >Approach</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#results"
+            >Results</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#future"
+            >Future Work</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#team"
+            >Team</a>
+          </li>
+
+          <li>
+            <a
+              class="nav-link"
+              href="#references"
+            >References</a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <button
+          class="icon-button"
+          id="themeToggle"
+          type="button"
+          aria-label="Switch color theme"
+        >
+          <span
+            class="theme-dark-icon"
+            aria-hidden="true"
+          >☾</span>
+
+          <span
+            class="theme-light-icon"
+            aria-hidden="true"
+          >☀</span>
+        </button>
+
+        <button
+          class="icon-button menu-toggle"
+          id="menuToggle"
+          type="button"
+          aria-label="Open navigation menu"
+          aria-controls="navMenu"
+          aria-expanded="false"
+        >
+          <span
+            id="menuIcon"
+            aria-hidden="true"
+          >☰</span>
+        </button>
+      </div>
+    </div>
   </header>
 
   <main id="main-content">
-    <!-- Hero -->
-    <section class="hero section-shell">
-      <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
-      <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
-
-      <div class="hero-grid">
+    <!-- =======================================================
+         HERO
+         ======================================================= -->
+    <section
+      class="hero"
+      id="home"
+      aria-labelledby="hero-title"
+    >
+      <div class="container hero-grid">
         <div class="hero-copy reveal">
-          <div class="eyebrow">
-            <span class="pulse-dot" aria-hidden="true"></span>
+          <div class="project-status">
+            <span
+              class="status-dot"
+              aria-hidden="true"
+            ></span>
             Spring 2026 · CSCI 5541 NLP · University of Minnesota
           </div>
 
-          <h1>
-            Temporal Clinical Reasoning
-            <span>for Medical Coding</span>
-          </h1>
-
-          <p class="hero-lead">
-            A longitudinal clinical NLP framework for jointly predicting
-            <strong>ICD diagnosis codes</strong> and
-            <strong>CPT procedure codes</strong> from time-ordered patient notes.
+          <p class="eyebrow">
+            Stack OverFlowers · Clinical NLP
           </p>
 
-          <div class="hero-actions">
-            <a class="button button-primary" href="#approach">
-              Explore the Method
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
+          <h1 id="hero-title">
+            Temporal Clinical Reasoning
+            <span class="gradient-text">
+              for Medical Coding.
+            </span>
+          </h1>
+
+          <p class="hero-role">
+            Predicting ICD diagnosis codes and CPT procedure codes from
+            clinical notes recorded across a hospital admission.
+          </p>
+
+          <p class="hero-description">
+            The project organizes a patient's notes in time order instead of using
+            only one document. Each note is encoded with BioClinicalBERT, and
+            the sequence is modeled to predict ICD and CPT codes for the admission.
+          </p>
+
+          <div class="buttons">
+            <a
+              class="button button-primary"
+              href="#approach"
+            >
+              View the approach ↓
             </a>
+
             <a
               class="button button-secondary"
               href="./files/Report.pdf"
               target="_blank"
               rel="noopener noreferrer"
             >
-              View Final Report
+              Final report ↗
+            </a>
+
+            <a
+              class="button button-secondary"
+              href="https://github.com/Samarth-Kumar-Samal-Sam/Temporal-Clinical-Reasoning-for-Medical-Coding"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub ↗
             </a>
           </div>
 
-          <div class="hero-tags" aria-label="Project technologies">
+          <ul
+            class="hero-meta"
+            aria-label="Project details"
+          >
+            <li>
+              <b>◎</b>
+              MIMIC-III
+            </li>
+
+            <li>
+              <b>◇</b>
+              BioClinicalBERT · Longformer · BiLSTM
+            </li>
+
+            <li>
+              <b>↔</b>
+              Multi-label ICD + CPT prediction
+            </li>
+          </ul>
+        </div>
+
+        <div
+          class="hero-visual reveal"
+          aria-label="Illustration of the temporal clinical reasoning workflow"
+        >
+          <div class="timeline-window">
+            <div class="window-label">
+              Example admission timeline
+            </div>
+
+            <div class="timeline-track">
+              <div class="timeline-event">
+                <span class="timeline-time">T₁</span>
+
+                <div>
+                  <strong>Radiology report</strong>
+                  <small>
+                    Radiology information recorded during the admission
+                  </small>
+                </div>
+              </div>
+
+              <div class="timeline-event">
+                <span class="timeline-time">T₂</span>
+
+                <div>
+                  <strong>Clinical / nursing note</strong>
+                  <small>
+                    Additional clinical information recorded later
+                  </small>
+                </div>
+              </div>
+
+              <div class="timeline-event">
+                <span class="timeline-time">T₃</span>
+
+                <div>
+                  <strong>Discharge summary</strong>
+                  <small>
+                    Final summary of the hospital stay
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <div class="reasoning-block">
+              <span>Temporal model</span>
+              <strong>BioClinicalBERT → BiLSTM</strong>
+
+              <div class="prediction-chips">
+                <div class="prediction-chip">
+                  <b>ICD</b>
+                  <span>Diagnosis prediction</span>
+                </div>
+
+                <div class="prediction-chip">
+                  <b>CPT</b>
+                  <span>Procedure prediction</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         IMPACT METRICS
+         ======================================================= -->
+    <section
+      class="impact"
+      id="impact"
+      aria-label="Selected project metrics"
+    >
+      <div class="container">
+        <div class="impact-grid reveal">
+          <div class="impact-item">
+            <strong class="impact-number">
+              101,655
+            </strong>
+
+            <span class="impact-label">
+              Temporal-model admissions
+            </span>
+          </div>
+
+          <div class="impact-item">
+            <strong class="impact-number">
+              0.5343
+            </strong>
+
+            <span class="impact-label">
+              Temporal ICD Micro-F1
+            </span>
+          </div>
+
+          <div class="impact-item">
+            <strong class="impact-number">
+              0.6096
+            </strong>
+
+            <span class="impact-label">
+              Temporal CPT Micro-F1
+            </span>
+          </div>
+
+          <div class="impact-item">
+            <strong class="impact-number">
+              0.5925
+            </strong>
+
+            <span class="impact-label">
+              Best joint score · Longformer
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         OVERVIEW / ABSTRACT / MOTIVATION
+         ======================================================= -->
+    <section
+      id="overview"
+      aria-labelledby="overview-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              Project overview
+            </p>
+
+            <h2
+              class="section-title"
+              id="overview-title"
+            >
+              Clinical information is spread across
+              <span class="gradient-text">
+                multiple notes.
+              </span>
+            </h2>
+          </div>
+
+          <p class="section-description">
+            A patient's diagnosis and treatment information can appear in different
+            notes at different times. This project keeps that order when building
+            the model input.
+          </p>
+        </div>
+
+        <div class="overview-grid">
+          <article class="card abstract-card reveal">
+            <p class="eyebrow">
+              Abstract
+            </p>
+
+            <h3>
+              Using multiple notes from the same admission
+            </h3>
+
+            <p>
+              This project predicts ICD diagnosis codes and CPT procedure codes from
+              clinical records. A single discharge summary may not contain all
+              relevant information, so we also use notes created earlier in the admission.
+            </p>
+
+            <p>
+              We compare three approaches: BioClinicalBERT using one discharge summary,
+              Longformer using combined documents, and BioClinicalBERT + bidirectional
+              LSTM using notes in chronological order.
+            </p>
+
+            <p>
+              The temporal model uses the sequence of notes to predict ICD and CPT codes together.
+            </p>
+          </article>
+
+          <aside
+            class="overview-aside"
+            aria-label="Problem and project objective"
+          >
+            <article class="card lift info-card reveal">
+              <p class="eyebrow">
+                Problem
+              </p>
+
+              <h3>
+                One document may miss earlier information
+              </h3>
+
+              <p>
+                Relevant information can appear in radiology reports, nursing notes,
+                and the discharge summary at different times during the stay.
+              </p>
+            </article>
+
+            <article class="card lift info-card reveal">
+              <p class="eyebrow">
+                Objective
+              </p>
+
+              <h3>
+                Keep the order of clinical notes
+              </h3>
+
+              <p>
+                Group notes by admission, sort them by time, and use the ordered sequence
+                to predict diagnosis and procedure codes.
+              </p>
+            </article>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         FRAMEWORK
+         ======================================================= -->
+    <section
+      class="section-alt"
+      id="framework"
+      aria-labelledby="framework-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              System overview
+            </p>
+
+            <h2
+              class="section-title"
+              id="framework-title"
+            >
+              Project
+              <span class="gradient-text">
+                framework.
+              </span>
+            </h2>
+          </div>
+
+          <p class="section-description">
+            Clinical notes are grouped by admission and sorted by time before they are
+            passed to the model.
+          </p>
+        </div>
+
+        <figure class="card figure-card reveal">
+          <div class="figure-window-bar">
+            <div class="window-dots">
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+            </div>
+
+            <span>files/figure1.png</span>
+          </div>
+
+          <img
+            src="./files/figure1.png"
+            alt="Overview of the temporal clinical reasoning framework"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <figcaption>
+            Overview of the data preparation and modeling workflow used in the project.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         APPROACH
+         ======================================================= -->
+    <section
+      id="approach"
+      aria-labelledby="approach-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              Methodology
+            </p>
+
+            <h2
+              class="section-title"
+              id="approach-title"
+            >
+              Three models for
+              <span class="gradient-text">
+                medical code prediction.
+              </span>
+            </h2>
+          </div>
+
+          <p class="section-description">
+            The models use progressively more information: one discharge summary,
+            combined documents, and then notes kept in chronological order.
+          </p>
+        </div>
+
+        <div class="model-grid">
+          <!-- Baseline 1 -->
+          <article class="card lift model-card reveal">
+            <div class="model-top">
+              <span class="index">01</span>
+              <span class="model-label">
+                Baseline 1
+              </span>
+            </div>
+
+            <h3>
+              BioClinicalBERT
+            </h3>
+
+            <p class="model-subtitle">
+              One discharge summary
+            </p>
+
+            <ul class="clean-list">
+              <li>
+                Matches notes and labels using
+                <code>hadm_id</code>.
+              </li>
+
+              <li>
+                Uses one discharge summary per admission.
+              </li>
+
+              <li>
+                Adds dropout and a linear classification head
+                to BioClinicalBERT.
+              </li>
+
+              <li>
+                Uses 86,146 admissions with a
+                60,302 / 12,922 / 12,922 train-validation-test split.
+              </li>
+            </ul>
+
+            <div class="tags">
+              <span class="tag primary">
+                BioClinicalBERT
+              </span>
+
+              <span class="tag">
+                Single Note
+              </span>
+
+              <span class="tag">
+                Multi-label
+              </span>
+            </div>
+          </article>
+
+          <!-- Baseline 2 -->
+          <article class="card lift model-card reveal">
+            <div class="model-top">
+              <span class="index">02</span>
+              <span class="model-label">
+                Baseline 2
+              </span>
+            </div>
+
+            <h3>
+              Longformer
+            </h3>
+
+            <p class="model-subtitle">
+              Combined discharge and radiology notes
+            </p>
+
+            <ul class="clean-list">
+              <li>
+                Groups discharge and radiology documents by
+                <code>hadm_id</code>.
+              </li>
+
+              <li>
+                Sorts documents using
+                <code>charttime</code>.
+              </li>
+
+              <li>
+                Merges documents into a single long text input.
+              </li>
+
+              <li>
+                Uses Longformer to handle the longer combined text input.
+              </li>
+            </ul>
+
+            <div class="tags">
+              <span class="tag primary">
+                Longformer
+              </span>
+
+              <span class="tag">
+                Long Context
+              </span>
+
+              <span class="tag">
+                Multi-document
+              </span>
+            </div>
+          </article>
+
+          <!-- Temporal -->
+          <article class="card lift model-card featured reveal">
+            <div class="model-top">
+              <span class="index">03</span>
+              <span class="model-label">
+                Proposed temporal model
+              </span>
+            </div>
+
+            <h3>
+              BioClinicalBERT + BiLSTM
+            </h3>
+
+            <p class="model-subtitle">
+              Notes ordered by time
+            </p>
+
+            <ul class="clean-list">
+              <li>
+                Sorts clinical notes chronologically within each
+                admission.
+              </li>
+
+              <li>
+                Uses up to five notes as the admission-level sequence.
+              </li>
+
+              <li>
+                Encodes each document with BioClinicalBERT.
+              </li>
+
+              <li>
+                Uses a single-layer bidirectional LSTM across the ordered note embeddings.
+              </li>
+
+              <li>
+                Uses 101,655 admissions with a
+                71,158 / 15,248 / 15,249 train-validation-test split.
+              </li>
+            </ul>
+
+            <div class="tags">
+              <span class="tag primary">
+                Temporal Reasoning
+              </span>
+
+              <span class="tag">
+                BioClinicalBERT
+              </span>
+
+              <span class="tag">
+                BiLSTM
+              </span>
+
+              <span class="tag">
+                ICD + CPT
+              </span>
+            </div>
+          </article>
+        </div>
+
+        <div class="card pipeline reveal">
+          <div class="pipeline-step">
+            <b>1. MIMIC-III</b>
+            <span>Clinical notes and labels</span>
+          </div>
+
+          <div class="pipeline-step">
+            <b>2. Group</b>
+            <span>Align by admission</span>
+          </div>
+
+          <div class="pipeline-step">
+            <b>3. Order</b>
+            <span>Sort by charttime</span>
+          </div>
+
+          <div class="pipeline-step">
+            <b>4. Encode</b>
             <span>BioClinicalBERT</span>
-            <span>Longformer</span>
-            <span>BiLSTM</span>
-            <span>MIMIC-III</span>
-            <span>Multi-label Learning</span>
+          </div>
+
+          <div class="pipeline-step">
+            <b>5. Model time</b>
+            <span>Bidirectional LSTM</span>
+          </div>
+
+          <div class="pipeline-step">
+            <b>6. Predict</b>
+            <span>ICD + CPT labels</span>
           </div>
         </div>
+      </div>
+    </section>
 
-        <aside class="hero-panel glass-panel reveal" aria-label="Project highlights">
-          <div class="panel-kicker">Research snapshot</div>
-          <div class="clinical-timeline" aria-hidden="true">
-            <div class="timeline-line"></div>
+    <!-- =======================================================
+         RESULTS
+         ======================================================= -->
+    <section
+      class="section-alt"
+      id="results"
+      aria-labelledby="results-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              Evaluation
+            </p>
 
-            <div class="clinical-event">
-              <span class="event-time">T₁</span>
-              <div>
-                <strong>Radiology note</strong>
-                <small>Clinical evidence enters the timeline</small>
-              </div>
-            </div>
-
-            <div class="clinical-event">
-              <span class="event-time">T₂</span>
-              <div>
-                <strong>Nursing / clinical note</strong>
-                <small>Patient state evolves over time</small>
-              </div>
-            </div>
-
-            <div class="clinical-event">
-              <span class="event-time">T₃</span>
-              <div>
-                <strong>Discharge summary</strong>
-                <small>Admission-level context is completed</small>
-              </div>
-            </div>
+            <h2
+              class="section-title"
+              id="results-title"
+            >
+              ICD and CPT
+              <span class="gradient-text">
+                prediction results.
+              </span>
+            </h2>
           </div>
 
-          <div class="reasoning-arrow" aria-hidden="true">
-            <span>Temporal reasoning</span>
-            <svg viewBox="0 0 100 16">
-              <path d="M2 8h88M83 2l8 6-8 6"/>
-            </svg>
-          </div>
+          <p class="section-description">
+            Longformer has the highest joint score and the strongest ICD results.
+            The temporal model has the highest CPT Micro-F1, Macro-F1, and Precision@5.
+          </p>
+        </div>
 
-          <div class="prediction-row">
+        <div class="results-highlights">
+          <article class="card lift result-card reveal">
+            <span>
+              Best overall joint score
+            </span>
+
+            <strong>
+              0.5925
+            </strong>
+
+            <p>
+              Longformer
+            </p>
+          </article>
+
+          <article class="card lift result-card reveal">
+            <span>
+              Temporal CPT Micro-F1
+            </span>
+
+            <strong>
+              0.6096
+            </strong>
+
+            <p>
+              Highest CPT Micro-F1
+            </p>
+          </article>
+
+          <article class="card lift result-card reveal">
+            <span>
+              Temporal CPT Macro-F1
+            </span>
+
+            <strong>
+              0.3971
+            </strong>
+
+            <p>
+              Highest CPT Macro-F1
+            </p>
+          </article>
+        </div>
+
+        <div class="card table-card reveal">
+          <div class="table-header">
             <div>
-              <span>ICD</span>
-              <strong>Diagnosis</strong>
+              <p>
+                Comparative results
+              </p>
+
+              <h3>
+                Model evaluation table
+              </h3>
             </div>
-            <div>
-              <span>CPT</span>
-              <strong>Procedure</strong>
+
+            <div class="table-legend">
+              Highlighted values indicate the best value in that metric.
             </div>
           </div>
-        </aside>
-      </div>
 
-      <div class="hero-metrics">
-        <article class="metric-card glass-panel reveal">
-          <span class="metric-label">Temporal admissions</span>
-          <strong class="metric-value" data-count="101655">101,655</strong>
-          <small>admission-level sequences</small>
-        </article>
-        <article class="metric-card glass-panel reveal">
-          <span class="metric-label">ICD Micro-F1</span>
-          <strong class="metric-value">0.5343</strong>
-          <small>Temporal BERT + LSTM</small>
-        </article>
-        <article class="metric-card glass-panel reveal">
-          <span class="metric-label">CPT Micro-F1</span>
-          <strong class="metric-value accent">0.6096</strong>
-          <small>Temporal BERT + LSTM</small>
-        </article>
-        <article class="metric-card glass-panel reveal">
-          <span class="metric-label">Joint score</span>
-          <strong class="metric-value">0.5720</strong>
-          <small>Unified ICD + CPT prediction</small>
-        </article>
-      </div>
-    </section>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>ICD Micro-F1</th>
+                  <th>ICD Macro-F1</th>
+                  <th>CPT Micro-F1</th>
+                  <th>CPT Macro-F1</th>
+                  <th>P@5 ICD</th>
+                  <th>P@5 CPT</th>
+                  <th>Joint Score</th>
+                </tr>
+              </thead>
 
-    <!-- Overview -->
-    <section class="content-section section-shell" id="overview">
-      <div class="section-heading reveal">
-        <span class="section-number">01</span>
-        <div>
-          <p class="section-kicker">Project overview</p>
-          <h2>Why temporal context matters in medical coding</h2>
-        </div>
-      </div>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>
+                      BioClinicalBERT
+                    </strong>
 
-      <div class="two-column">
-        <article class="content-card reveal">
-          <div class="card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 5h16v14H4zM8 9h8M8 13h5"/>
-            </svg>
-          </div>
-          <h3>The limitation</h3>
-          <p>
-            Existing automated coding systems often rely on a single document,
-            such as a discharge summary. That can miss clinically important
-            information distributed across radiology reports, nursing notes,
-            and other records created throughout an admission.
-          </p>
-        </article>
+                    <small>
+                      Single-note baseline
+                    </small>
+                  </td>
 
-        <article class="content-card reveal">
-          <div class="card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 12h4l2-6 4 12 2-6h4"/>
-            </svg>
-          </div>
-          <h3>Our direction</h3>
-          <p>
-            We organize clinical notes at the admission level, preserve their
-            chronological order, encode each note with BioClinicalBERT, and
-            model the evolving patient state with a bidirectional LSTM for
-            joint ICD and CPT prediction.
-          </p>
-        </article>
-      </div>
+                  <td>0.4506</td>
+                  <td>0.3130</td>
+                  <td>0.5380</td>
+                  <td>0.1751</td>
+                  <td>0.4315</td>
+                  <td>0.4775</td>
+                  <td>0.4593</td>
+                </tr>
 
-      <div class="abstract-block glass-panel reveal">
-        <div>
-          <p class="section-kicker">Abstract</p>
-          <h3>From isolated documents to longitudinal reasoning</h3>
-        </div>
-        <div class="abstract-copy">
-          <p>
-            This project focuses on predicting ICD diagnosis codes and CPT
-            procedure codes from clinical records. To better use information
-            distributed across a patient's admission, the project compares a
-            single-document BioClinicalBERT baseline, a Longformer-based
-            multi-document model, and a temporal BioClinicalBERT + BiLSTM model.
-          </p>
-          <p>
-            The temporal model processes multiple notes in chronological order,
-            capturing dependencies across documents and enabling joint medical
-            code prediction within a unified multi-label framework.
-          </p>
-        </div>
-      </div>
-    </section>
+                <tr>
+                  <td>
+                    <strong>
+                      Longformer
+                    </strong>
 
-    <!-- Framework image -->
-    <section class="content-section section-shell" id="framework">
-      <div class="section-heading reveal">
-        <span class="section-number">02</span>
-        <div>
-          <p class="section-kicker">System overview</p>
-          <h2>Temporal clinical reasoning framework</h2>
-        </div>
-      </div>
+                    <small>
+                      Long-context baseline
+                    </small>
+                  </td>
 
-      <figure class="framework-figure glass-panel reveal">
-        <div class="figure-topbar">
-          <div>
-            <span class="window-dot"></span>
-            <span class="window-dot"></span>
-            <span class="window-dot"></span>
-          </div>
-          <span>figure1.png</span>
-        </div>
-        <img
-          src="./files/figure1.png"
-          alt="Overview of the temporal clinical reasoning framework"
-          loading="lazy"
-        />
-        <figcaption>
-          Clinical notes are aligned by admission and ordered over time so the
-          model can reason over patient progression rather than a single static
-          snapshot.
-        </figcaption>
-      </figure>
-    </section>
+                  <td class="best">
+                    0.5946
+                  </td>
 
-    <!-- Approach -->
-    <section class="content-section section-shell" id="approach">
-      <div class="section-heading reveal">
-        <span class="section-number">03</span>
-        <div>
-          <p class="section-kicker">Methodology</p>
-          <h2>Three modeling strategies, one clinical coding task</h2>
-        </div>
-      </div>
+                  <td class="best">
+                    0.4394
+                  </td>
 
-      <div class="model-grid">
-        <article class="model-card reveal">
-          <div class="model-index">01</div>
-          <span class="model-type">Baseline 1</span>
-          <h3>BioClinicalBERT</h3>
-          <p class="model-subtitle">Single discharge summary</p>
-          <p>
-            Notes and labels are matched by <code>hadm_id</code>. A
-            BioClinicalBERT encoder, dropout layer, and linear classification
-            head predict the presence of the top ICD codes from one discharge
-            summary.
-          </p>
-          <dl class="model-details">
-            <div><dt>Admissions</dt><dd>86,146</dd></div>
-            <div><dt>Input</dt><dd>Single note</dd></div>
-            <div><dt>Strength</dt><dd>Simple & stable</dd></div>
-          </dl>
-        </article>
+                  <td>
+                    0.5904
+                  </td>
 
-        <article class="model-card reveal">
-          <div class="model-index">02</div>
-          <span class="model-type">Baseline 2</span>
-          <h3>Longformer</h3>
-          <p class="model-subtitle">Merged multi-document context</p>
-          <p>
-            Discharge and radiology documents are grouped by admission, sorted
-            by <code>charttime</code>, and merged into a long sequence for
-            Longformer-based multi-label prediction.
-          </p>
-          <dl class="model-details">
-            <div><dt>Context</dt><dd>Long sequence</dd></div>
-            <div><dt>Input</dt><dd>Multiple notes</dd></div>
-            <div><dt>Strength</dt><dd>Long-context modeling</dd></div>
-          </dl>
-        </article>
+                  <td>
+                    0.3001
+                  </td>
 
-        <article class="model-card model-card-featured reveal">
-          <div class="featured-badge">Temporal model</div>
-          <div class="model-index">03</div>
-          <span class="model-type">Proposed</span>
-          <h3>BioClinicalBERT + BiLSTM</h3>
-          <p class="model-subtitle">Time-ordered admission sequence</p>
-          <p>
-            Up to five notes are encoded independently with BioClinicalBERT.
-            A single-layer bidirectional LSTM then models patient state changes
-            across time before jointly predicting ICD and CPT codes.
-          </p>
-          <dl class="model-details">
-            <div><dt>Admissions</dt><dd>101,655</dd></div>
-            <div><dt>Sequence</dt><dd>Up to 5 notes</dd></div>
-            <div><dt>Goal</dt><dd>Temporal reasoning</dd></div>
-          </dl>
-        </article>
-      </div>
+                  <td class="best">
+                    0.5563
+                  </td>
 
-      <div class="pipeline glass-panel reveal">
-        <div class="pipeline-step">
-          <span>1</span>
-          <div>
-            <strong>MIMIC-III</strong>
-            <small>Clinical notes + labels</small>
+                  <td>
+                    0.4963
+                  </td>
+
+                  <td class="best">
+                    0.5925
+                  </td>
+                </tr>
+
+                <tr class="temporal-row">
+                  <td>
+                    <strong>
+                      Temporal BERT + LSTM
+                    </strong>
+
+                    <small>
+                      Proposed temporal model
+                    </small>
+                  </td>
+
+                  <td>
+                    0.5343
+                  </td>
+
+                  <td>
+                    0.4122
+                  </td>
+
+                  <td class="best">
+                    0.6096
+                  </td>
+
+                  <td class="best">
+                    0.3971
+                  </td>
+
+                  <td>
+                    0.4979
+                  </td>
+
+                  <td class="best">
+                    0.5010
+                  </td>
+
+                  <td>
+                    0.5720
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div class="pipeline-arrow" aria-hidden="true">→</div>
-        <div class="pipeline-step">
-          <span>2</span>
-          <div>
-            <strong>Admission grouping</strong>
-            <small>Align by hadm_id</small>
-          </div>
-        </div>
-        <div class="pipeline-arrow" aria-hidden="true">→</div>
-        <div class="pipeline-step">
-          <span>3</span>
-          <div>
-            <strong>Chronological ordering</strong>
-            <small>Sort by charttime</small>
-          </div>
-        </div>
-        <div class="pipeline-arrow" aria-hidden="true">→</div>
-        <div class="pipeline-step">
-          <span>4</span>
-          <div>
-            <strong>Clinical encoding</strong>
-            <small>BioClinicalBERT</small>
-          </div>
-        </div>
-        <div class="pipeline-arrow" aria-hidden="true">→</div>
-        <div class="pipeline-step">
-          <span>5</span>
-          <div>
-            <strong>Temporal modeling</strong>
-            <small>Bidirectional LSTM</small>
-          </div>
-        </div>
-        <div class="pipeline-arrow" aria-hidden="true">→</div>
-        <div class="pipeline-step">
-          <span>6</span>
-          <div>
-            <strong>Joint prediction</strong>
-            <small>ICD + CPT</small>
-          </div>
+
+        <div class="findings-grid">
+          <article class="card lift finding-card reveal">
+            <span class="finding-number">
+              FINDING 01
+            </span>
+
+            <h3>
+              The temporal model improves on the single-note baseline
+            </h3>
+
+            <p>
+              Using multiple notes in time order improves the temporal model over the
+              single-discharge-summary BioClinicalBERT baseline.
+            </p>
+          </article>
+
+          <article class="card lift finding-card reveal">
+            <span class="finding-number">
+              FINDING 02
+            </span>
+
+            <h3>
+              Longformer has the best joint score
+            </h3>
+
+            <p>
+              Longformer reaches the highest joint score and the best ICD Micro-F1 and Macro-F1.
+            </p>
+          </article>
+
+          <article class="card lift finding-card reveal">
+            <span class="finding-number">
+              FINDING 03
+            </span>
+
+            <h3>
+              The temporal model performs best on CPT metrics
+            </h3>
+
+            <p>
+              The temporal model has the highest CPT Micro-F1, CPT Macro-F1, and CPT Precision@5.
+            </p>
+          </article>
+
+          <article class="card lift finding-card reveal">
+            <span class="finding-number">
+              FINDING 04
+            </span>
+
+            <h3>
+              Rare ICD codes are still difficult
+            </h3>
+
+            <p>
+              Less frequent ICD codes are harder to predict because the labels are imbalanced
+              and the current sequence model has limited long-range context.
+            </p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- Results -->
-    <section class="content-section section-shell" id="results">
-      <div class="section-heading reveal">
-        <span class="section-number">04</span>
-        <div>
-          <p class="section-kicker">Evaluation</p>
-          <h2>Model performance</h2>
-        </div>
-      </div>
-
-      <div class="results-summary">
-        <article class="result-highlight reveal">
-          <span>Best joint score</span>
-          <strong>0.5925</strong>
-          <p>Longformer</p>
-        </article>
-        <article class="result-highlight reveal">
-          <span>Temporal CPT Micro-F1</span>
-          <strong>0.6096</strong>
-          <p>Strongest temporal-model metric</p>
-        </article>
-        <article class="result-highlight reveal">
-          <span>Temporal CPT Macro-F1</span>
-          <strong>0.3971</strong>
-          <p>Improved rare-label sensitivity</p>
-        </article>
-      </div>
-
-      <div class="table-card glass-panel reveal">
-        <div class="table-header">
+    <!-- =======================================================
+         LIMITATIONS AND FUTURE WORK
+         ======================================================= -->
+    <section
+      id="future"
+      aria-labelledby="future-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
           <div>
-            <p class="section-kicker">Comparative results</p>
-            <h3>ICD and CPT prediction metrics</h3>
+            <p class="eyebrow">
+              Research outlook
+            </p>
+
+            <h2
+              class="section-title"
+              id="future-title"
+            >
+              Limitations and
+              <span class="gradient-text">
+                next steps.
+              </span>
+            </h2>
           </div>
-          <div class="legend">
-            <span><i class="legend-dot temporal"></i> Temporal model</span>
-          </div>
+
+          <p class="section-description">
+            The current model works with a limited number of notes and still struggles
+            with rare codes. These are the main areas for improvement.
+          </p>
         </div>
 
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>ICD Micro-F1</th>
-                <th>ICD Macro-F1</th>
-                <th>CPT Micro-F1</th>
-                <th>CPT Macro-F1</th>
-                <th>P@5 ICD</th>
-                <th>P@5 CPT</th>
-                <th>Joint Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <strong>BioClinicalBERT</strong>
-                  <small>Single-note baseline</small>
-                </td>
-                <td>0.4506</td>
-                <td>0.3130</td>
-                <td>0.5380</td>
-                <td>0.1751</td>
-                <td>0.4315</td>
-                <td>0.4775</td>
-                <td>0.4593</td>
-              </tr>
-              <tr>
-                <td>
-                  <strong>Longformer</strong>
-                  <small>Long-context baseline</small>
-                </td>
-                <td class="best-cell">0.5946</td>
-                <td class="best-cell">0.4394</td>
-                <td>0.5904</td>
-                <td>0.3001</td>
-                <td class="best-cell">0.5563</td>
-                <td>0.4963</td>
-                <td class="best-cell">0.5925</td>
-              </tr>
-              <tr class="temporal-row">
-                <td>
-                  <strong>Temporal BERT + LSTM</strong>
-                  <small>Proposed temporal model</small>
-                </td>
-                <td>0.5343</td>
-                <td>0.4122</td>
-                <td class="best-cell">0.6096</td>
-                <td class="best-cell">0.3971</td>
-                <td>0.4979</td>
-                <td class="best-cell">0.5010</td>
-                <td>0.5720</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="future-grid">
+          <article class="card future-card reveal">
+            <p class="eyebrow">
+              Current limitations
+            </p>
+
+            <h3>
+              Current limitations
+            </h3>
+
+            <ul class="clean-list">
+              <li>
+                Rare-code prediction remains limited by label imbalance.
+              </li>
+
+              <li>
+                Each admission is represented by a limited number of notes.
+              </li>
+
+              <li>
+                Longer hospital stays can lose useful information through
+                truncation.
+              </li>
+
+              <li>
+                The LSTM-based sequence model may not fully capture
+                distant long-range dependencies.
+              </li>
+            </ul>
+          </article>
+
+          <article class="card future-card accent reveal">
+            <p class="eyebrow">
+              Future work
+            </p>
+
+            <h3>
+              Planned improvements
+            </h3>
+
+            <ul class="clean-list">
+              <li>
+                Incorporate structured clinical data together with
+                free-text note representations.
+              </li>
+
+              <li>
+                Improve rare-code prediction using stronger sampling
+                strategies.
+              </li>
+
+              <li>
+                Explore transformer-based temporal architectures for
+                longer clinical sequences.
+              </li>
+
+              <li>
+                Use more notes from long admissions without making training too expensive.
+              </li>
+            </ul>
+          </article>
         </div>
-      </div>
-
-      <div class="findings-grid">
-        <article class="finding-card reveal">
-          <span class="finding-number">01</span>
-          <h3>Temporal context helps</h3>
-          <p>
-            The time-ordered model substantially improves on the single-note
-            BioClinicalBERT baseline and captures admission-level progression.
-          </p>
-        </article>
-
-        <article class="finding-card reveal">
-          <span class="finding-number">02</span>
-          <h3>Longformer leads overall</h3>
-          <p>
-            Longformer achieves the highest joint score and strongest ICD
-            Micro-F1 through long-context document modeling.
-          </p>
-        </article>
-
-        <article class="finding-card reveal">
-          <span class="finding-number">03</span>
-          <h3>Temporal model excels on CPT</h3>
-          <p>
-            The temporal model produces the highest CPT Micro-F1 and Macro-F1,
-            indicating competitive procedure-code prediction.
-          </p>
-        </article>
-
-        <article class="finding-card reveal">
-          <span class="finding-number">04</span>
-          <h3>Rare labels remain difficult</h3>
-          <p>
-            Label imbalance and limited long-range modeling continue to reduce
-            performance for less frequent codes.
-          </p>
-        </article>
       </div>
     </section>
 
-    <!-- Limitations & future -->
-    <section class="content-section section-shell" id="future">
-      <div class="section-heading reveal">
-        <span class="section-number">05</span>
-        <div>
-          <p class="section-kicker">Research outlook</p>
-          <h2>Limitations and future work</h2>
+    <!-- =======================================================
+         TEAM
+         ======================================================= -->
+    <section
+      class="section-alt"
+      id="team"
+      aria-labelledby="team-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              Stack OverFlowers
+            </p>
+
+            <h2
+              class="section-title"
+              id="team-title"
+            >
+              Project
+              <span class="gradient-text">
+                team.
+              </span>
+            </h2>
+          </div>
+
+          <p class="section-description">
+            Team members worked on data preparation, model development, training,
+            evaluation, the report, and the project website.
+          </p>
         </div>
-      </div>
 
-      <div class="future-grid">
-        <article class="future-card reveal">
-          <span class="future-label">Current limitations</span>
-          <ul class="feature-list">
-            <li>Rare-code performance remains limited by label imbalance.</li>
-            <li>Only a limited number of notes are retained per admission.</li>
-            <li>LSTM may not fully capture distant long-range dependencies.</li>
-            <li>Information compression can reduce some ICD performance.</li>
-          </ul>
-        </article>
+        <div class="team-grid">
+          <article class="card lift team-card reveal">
+            <div class="team-photo-wrap">
+              <img
+                src="./files/WoochangShin.jpg"
+                alt="Woochang Shin"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
 
-        <article class="future-card future-card-accent reveal">
-          <span class="future-label">Next directions</span>
-          <ul class="feature-list">
-            <li>Integrate structured clinical data with note representations.</li>
-            <li>Improve rare-code learning with stronger sampling strategies.</li>
-            <li>Explore transformer-based temporal sequence models.</li>
-            <li>Model longer admissions without aggressive truncation.</li>
-          </ul>
-        </article>
+            <div class="team-content">
+              <h3>
+                Woochang Shin
+              </h3>
+
+              <p class="team-role">
+                Longformer · Temporal Model · Website
+              </p>
+
+              <p>
+                Worked on the Longformer baseline and temporal model, and contributed to the website,
+                poster, and documentation.
+              </p>
+            </div>
+          </article>
+
+          <article class="card lift team-card reveal">
+            <div class="team-photo-wrap">
+              <img
+                src="./files/Jisun Kim.JPG"
+                alt="Jisun Kim"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="team-content">
+              <h3>
+                Jisun Kim
+              </h3>
+
+              <p class="team-role">
+                BioClinicalBERT · Temporal Model · Report
+              </p>
+
+              <p>
+                Worked on the BioClinicalBERT baseline and temporal model, and contributed to the
+                website, report, and documentation.
+              </p>
+            </div>
+          </article>
+
+          <article class="card lift team-card reveal">
+            <div class="team-photo-wrap">
+              <!-- Steven's required image path -->
+              <img
+                src="./files/Steven.jpg"
+                alt="Steven Hu"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="team-content">
+              <h3>
+                Steven Hu
+              </h3>
+
+              <p class="team-role">
+                MIMIC Data · Training · Evaluation
+              </p>
+
+              <p>
+                Handled MIMIC data access and preprocessing, model training, result extraction,
+                evaluation, the report, and documentation.
+              </p>
+            </div>
+          </article>
+
+          <article class="card lift team-card reveal">
+            <div class="team-photo-wrap">
+              <img
+                src="./files/SamarthKumarSamal(SAM).png"
+                alt="Samarth Kumar Samal"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="team-content">
+              <h3>
+                Samarth Kumar Samal
+              </h3>
+
+              <p class="team-role">
+                Joint ICD/CPT Modeling · Project Support
+              </p>
+
+              <p>
+                Worked on the joint ICD/CPT BioClinicalBERT, Longformer, and temporal models,
+                along with general project support.
+              </p>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
-    <!-- Team -->
-    <section class="content-section section-shell" id="team">
-      <div class="section-heading reveal">
-        <span class="section-number">06</span>
-        <div>
-          <p class="section-kicker">Stack OverFlowers</p>
-          <h2>Project team</h2>
-        </div>
-      </div>
+    <!-- =======================================================
+         REFERENCES
+         ======================================================= -->
+    <section
+      id="references"
+      aria-labelledby="references-title"
+    >
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <p class="eyebrow">
+              References
+            </p>
 
-      <div class="team-grid">
-        <article class="team-card reveal">
-          <div class="team-photo-wrap">
-            <img src="./files/WoochangShin.jpg" alt="Woochang Shin" loading="lazy" />
+            <h2
+              class="section-title"
+              id="references-title"
+            >
+              Project
+              <span class="gradient-text">
+                references.
+              </span>
+            </h2>
           </div>
-          <h3>Woochang Shin</h3>
-          <p>
-            Longformer and temporal-model development, project website,
-            poster, and documentation.
-          </p>
-        </article>
 
-        <article class="team-card reveal">
-          <div class="team-photo-wrap">
-            <img src="./files/Jisun Kim.JPG" alt="Jisun Kim" loading="lazy" />
-          </div>
-          <h3>Jisun Kim</h3>
-          <p>
-            BioClinicalBERT baseline and temporal-model development, website
-            maintenance, report, and documentation.
-          </p>
-        </article>
-
-        <article class="team-card reveal">
-          <div class="team-photo-wrap">
-            <!-- Required filename: files/Steven.jpg -->
-            <img src="./files/Steven.jpg" alt="Steven Hu" loading="lazy" />
-          </div>
-          <h3>Steven Hu</h3>
-          <p>
-            MIMIC data access and preprocessing, model training and execution,
-            result extraction, evaluation, and documentation.
-          </p>
-        </article>
-
-        <article class="team-card reveal">
-          <div class="team-photo-wrap">
-            <img
-              src="./files/SamarthKumarSamal(SAM).png"
-              alt="Samarth Kumar Samal"
-              loading="lazy"
-            />
-          </div>
-          <h3>Samarth Kumar Samal</h3>
-          <p>
-            Joint ICD/CPT BioClinicalBERT, Longformer, and temporal-model
-            implementation and project support.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <!-- References -->
-    <section class="content-section section-shell" id="references">
-      <div class="section-heading reveal">
-        <span class="section-number">07</span>
-        <div>
-          <p class="section-kicker">References</p>
-          <h2>Selected research foundations</h2>
-        </div>
-      </div>
-
-      <div class="references-card glass-panel reveal">
-        <ol>
-          <li>
-            Alsentzer, E., Murphy, J., Boag, W., Weng, W.-H., Jindi, D.,
-            Naumann, T., & McDermott, M. (2019). Publicly Available Clinical
-            BERT Embeddings. <em>ClinicalNLP Workshop</em>.
-          </li>
-          <li>
-            Beltagy, I., Peters, M. E., & Cohan, A. (2020). Longformer: The
-            Long-Document Transformer. <em>arXiv:2004.05150</em>.
-          </li>
-          <li>
-            Hochreiter, S., & Schmidhuber, J. (1997). Long Short-Term Memory.
-            <em>Neural Computation, 9</em>(8), 1735–1780.
-          </li>
-          <li>
-            Huang, C. W., Tsai, S. C., & Chen, Y. N. (2022). Hierarchical
-            Label-wise Attention Transformer Model for Explainable ICD Coding.
-          </li>
-          <li>
-            Mullenbach, J., Wiegreffe, S., Duke, J., Sun, J., & Eisenstein, J.
-            (2018). Explainable Prediction of Medical Codes from Clinical Text.
-            <em>NAACL-HLT 2018</em>.
-          </li>
-          <li>
-            Yang, Z., Shi, J., Lei, D., Liu, J., & Li, Y. (2022). TransICD:
-            Transformer Based Code-wise Attention Model for Explainable ICD
-            Coding.
-          </li>
-          <li>
-            Zhang, M. L., & Zhou, Z. H. (2014). A Review on Multi-Label Learning
-            Algorithms. <em>IEEE TKDE, 26</em>(8), 1819–1837.
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="cta-section section-shell">
-      <div class="cta-card reveal">
-        <div>
-          <p class="section-kicker">Explore the project</p>
-          <h2>Code, results, and project documentation</h2>
-          <p>
-            Review the implementation, generated results, and final report for
-            the complete experimental workflow.
+          <p class="section-description">
+            Key references used for the clinical language models, sequence model,
+            and medical coding task.
           </p>
         </div>
-        <div class="cta-actions">
+
+        <article class="card references-card reveal">
+          <ol class="references-list">
+            <li>
+              Alsentzer, E., Murphy, J., Boag, W., Weng, W.-H.,
+              Jindi, D., Naumann, T., and McDermott, M. (2019).
+              <em>Publicly Available Clinical BERT Embeddings.</em>
+              Proceedings of the 2nd Clinical Natural Language
+              Processing Workshop.
+            </li>
+
+            <li>
+              Beltagy, I., Peters, M. E., and Cohan, A. (2020).
+              <em>Longformer: The Long-Document Transformer.</em>
+              arXiv:2004.05150.
+            </li>
+
+            <li>
+              Hochreiter, S., and Schmidhuber, J. (1997).
+              <em>Long Short-Term Memory.</em>
+              Neural Computation, 9(8), 1735–1780.
+            </li>
+
+            <li>
+              Huang, C. W., Tsai, S. C., and Chen, Y. N. (2022).
+              <em>
+                Hierarchical Label-wise Attention Transformer Model
+                for Explainable ICD Coding.
+              </em>
+              arXiv:2204.10716.
+            </li>
+
+            <li>
+              Mullenbach, J., Wiegreffe, S., Duke, J., Sun, J.,
+              and Eisenstein, J. (2018).
+              <em>
+                Explainable Prediction of Medical Codes from
+                Clinical Text.
+              </em>
+              Proceedings of NAACL-HLT 2018.
+            </li>
+
+            <li>
+              Yang, Z., Shi, J., Lei, D., Liu, J., and Li, Y. (2022).
+              <em>
+                TransICD: Transformer Based Code-wise Attention
+                Model for Explainable ICD Coding.
+              </em>
+              arXiv:2104.10652.
+            </li>
+
+            <li>
+              Zhang, M. L., and Zhou, Z. H. (2014).
+              <em>
+                A Review on Multi-Label Learning Algorithms.
+              </em>
+              IEEE Transactions on Knowledge and Data Engineering,
+              26(8), 1819–1837.
+            </li>
+          </ol>
+        </article>
+
+        <div
+          class="buttons reveal"
+          style="margin-top: 1.4rem;"
+        >
           <a
             class="button button-primary"
-            href="https://github.com/samarthkumarsamal/Temporal-Clinical-Reasoning-for-Medical-Coding"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open GitHub Repository
-          </a>
-          <a
-            class="button button-secondary"
             href="./files/Report.pdf"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Final Report
+            Final report ↗
+          </a>
+
+          <a
+            class="button button-secondary"
+            href="https://github.com/Samarth-Kumar-Samal-Sam/Temporal-Clinical-Reasoning-for-Medical-Coding"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub repository ↗
           </a>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- =========================================================
+       FOOTER
+       ========================================================= -->
   <footer class="site-footer">
-    <div class="section-shell footer-grid">
-      <div>
-        <a class="brand footer-brand" href="#top">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M12 9h24a3 3 0 0 1 3 3v24a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3V12a3 3 0 0 1 3-3Z"/>
-              <path d="M16 24h6l3-7 5 14 3-7h4"/>
-            </svg>
-          </span>
-          <span>
-            <strong>TCRMC</strong>
-            <small>Temporal Clinical Reasoning</small>
-          </span>
-        </a>
-        <p>
-          Spring 2026 CSCI 5541 NLP Class Project · University of Minnesota
-        </p>
-      </div>
-
-      <div class="footer-links">
-        <a href="#overview">Overview</a>
-        <a href="#approach">Approach</a>
-        <a href="#results">Results</a>
-        <a href="#team">Team</a>
-      </div>
-
-      <p class="footer-meta">
-        Built as a research project page for longitudinal clinical NLP.
+    <div class="container footer-inner">
+      <p>
+        © <span id="year"></span>
+        Stack OverFlowers · CSCI 5541 NLP · University of Minnesota
       </p>
+
+      <div
+        class="footer-links"
+        aria-label="Project links"
+      >
+        <a href="#home">
+          Home
+        </a>
+
+        <a
+          href="./files/Report.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Report
+        </a>
+
+        <a
+          href="https://github.com/Samarth-Kumar-Samal-Sam/Temporal-Clinical-Reasoning-for-Medical-Coding"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </div>
     </div>
   </footer>
+
+  <button
+    class="scroll-top"
+    id="scrollTop"
+    type="button"
+    aria-label="Scroll to top"
+  >
+    ↑
+  </button>
+
+  <script>
+    "use strict";
+
+    /* =========================================================
+       1. ELEMENT REFERENCES
+       ========================================================= */
+
+    const root =
+      document.documentElement;
+
+    const siteHeader =
+      document.getElementById(
+        "siteHeader"
+      );
+
+    const navMenu =
+      document.getElementById(
+        "navMenu"
+      );
+
+    const navLinks =
+      [
+        ...document.querySelectorAll(
+          ".nav-link"
+        )
+      ];
+
+    const menuToggle =
+      document.getElementById(
+        "menuToggle"
+      );
+
+    const menuIcon =
+      document.getElementById(
+        "menuIcon"
+      );
+
+    const themeToggle =
+      document.getElementById(
+        "themeToggle"
+      );
+
+    const scrollTopButton =
+      document.getElementById(
+        "scrollTop"
+      );
+
+    const reducedMotion =
+      window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+
+    let backgroundController =
+      null;
+
+    document.getElementById(
+      "year"
+    ).textContent =
+      new Date().getFullYear();
+
+
+    /* =========================================================
+       2. DYNAMIC PARTICLE BACKGROUND
+       ========================================================= */
+
+    function createDynamicBackground() {
+
+      const canvas =
+        document.getElementById(
+          "dynamicBackground"
+        );
+
+      if (!canvas) {
+        return null;
+      }
+
+
+      const context =
+        canvas.getContext(
+          "2d",
+          {
+            alpha: true
+          }
+        );
+
+      if (!context) {
+        return null;
+      }
+
+
+      let width = 0;
+
+      let height = 0;
+
+      let pixelRatio = 1;
+
+      let frameId = null;
+
+      let particles = [];
+
+      let palette = [];
+
+
+      const pointer = {
+        x: 0,
+        y: 0,
+        active: false
+      };
+
+
+      function refreshPalette() {
+
+        const styles =
+          getComputedStyle(
+            root
+          );
+
+
+        palette = [
+
+          styles
+            .getPropertyValue(
+              "--primary"
+            )
+            .trim(),
+
+          styles
+            .getPropertyValue(
+              "--secondary"
+            )
+            .trim(),
+
+          styles
+            .getPropertyValue(
+              "--accent"
+            )
+            .trim()
+
+        ];
+
+      }
+
+
+      function createParticle() {
+
+        const speed =
+          0.12 +
+          Math.random() *
+          0.28;
+
+
+        const angle =
+          Math.random() *
+          Math.PI *
+          2;
+
+
+        return {
+
+          x:
+            Math.random() *
+            width,
+
+          y:
+            Math.random() *
+            height,
+
+          radius:
+            1 +
+            Math.random() *
+            1.8,
+
+          vx:
+            Math.cos(
+              angle
+            ) *
+            speed,
+
+          vy:
+            Math.sin(
+              angle
+            ) *
+            speed,
+
+          color:
+            Math.floor(
+              Math.random() *
+              palette.length
+            )
+
+        };
+
+      }
+
+
+      function rebuildParticles() {
+
+        const viewportArea =
+          width *
+          height;
+
+
+        const desiredCount =
+          Math.round(
+            viewportArea /
+            22000
+          );
+
+
+        const particleCount =
+          Math.max(
+
+            34,
+
+            Math.min(
+              desiredCount,
+              82
+            )
+
+          );
+
+
+        particles =
+          Array.from(
+
+            {
+              length:
+                particleCount
+            },
+
+            createParticle
+
+          );
+
+      }
+
+
+      function resizeCanvas() {
+
+        width =
+          window.innerWidth;
+
+
+        height =
+          window.innerHeight;
+
+
+        pixelRatio =
+          Math.min(
+            window.devicePixelRatio ||
+            1,
+            2
+          );
+
+
+        canvas.width =
+          Math.round(
+            width *
+            pixelRatio
+          );
+
+
+        canvas.height =
+          Math.round(
+            height *
+            pixelRatio
+          );
+
+
+        canvas.style.width =
+          `${width}px`;
+
+
+        canvas.style.height =
+          `${height}px`;
+
+
+        context.setTransform(
+
+          pixelRatio,
+          0,
+          0,
+          pixelRatio,
+          0,
+          0
+
+        );
+
+
+        rebuildParticles();
+
+        drawFrame(
+          false
+        );
+
+      }
+
+
+      function updateParticle(
+        particle
+      ) {
+
+        particle.x +=
+          particle.vx;
+
+
+        particle.y +=
+          particle.vy;
+
+
+        if (
+          particle.x <
+          -12
+        ) {
+
+          particle.x =
+            width + 12;
+
+        }
+
+
+        if (
+          particle.x >
+          width + 12
+        ) {
+
+          particle.x =
+            -12;
+
+        }
+
+
+        if (
+          particle.y <
+          -12
+        ) {
+
+          particle.y =
+            height + 12;
+
+        }
+
+
+        if (
+          particle.y >
+          height + 12
+        ) {
+
+          particle.y =
+            -12;
+
+        }
+
+
+        // Subtle interaction with the pointer
+        if (
+          pointer.active
+        ) {
+
+          const dx =
+            particle.x -
+            pointer.x;
+
+
+          const dy =
+            particle.y -
+            pointer.y;
+
+
+          const distanceSquared =
+            dx * dx +
+            dy * dy;
+
+
+          const influenceRadius =
+            145;
+
+
+          if (
+            distanceSquared >
+              0 &&
+            distanceSquared <
+              influenceRadius *
+              influenceRadius
+          ) {
+
+            const distance =
+              Math.sqrt(
+                distanceSquared
+              );
+
+
+            const force =
+              (
+                1 -
+                distance /
+                influenceRadius
+              ) *
+              0.018;
+
+
+            particle.vx +=
+              (
+                dx /
+                distance
+              ) *
+              force;
+
+
+            particle.vy +=
+              (
+                dy /
+                distance
+              ) *
+              force;
+
+          }
+
+        }
+
+
+        particle.vx *=
+          0.995;
+
+
+        particle.vy *=
+          0.995;
+
+
+        const maximumSpeed =
+          0.55;
+
+
+        const currentSpeed =
+          Math.hypot(
+            particle.vx,
+            particle.vy
+          );
+
+
+        if (
+          currentSpeed >
+          maximumSpeed
+        ) {
+
+          particle.vx =
+            (
+              particle.vx /
+              currentSpeed
+            ) *
+            maximumSpeed;
+
+
+          particle.vy =
+            (
+              particle.vy /
+              currentSpeed
+            ) *
+            maximumSpeed;
+
+        }
+
+      }
+
+
+      function drawConnections() {
+
+        const connectionDistance =
+          125;
+
+
+        for (
+          let first = 0;
+          first <
+            particles.length;
+          first += 1
+        ) {
+
+          for (
+            let second =
+              first + 1;
+            second <
+              particles.length;
+            second += 1
+          ) {
+
+            const dx =
+              particles[first].x -
+              particles[second].x;
+
+
+            const dy =
+              particles[first].y -
+              particles[second].y;
+
+
+            const distance =
+              Math.hypot(
+                dx,
+                dy
+              );
+
+
+            if (
+              distance <
+              connectionDistance
+            ) {
+
+              context.beginPath();
+
+
+              context.moveTo(
+
+                particles[first].x,
+                particles[first].y
+
+              );
+
+
+              context.lineTo(
+
+                particles[second].x,
+                particles[second].y
+
+              );
+
+
+              context.strokeStyle =
+                palette[
+                  particles[first].color
+                ];
+
+
+              context.globalAlpha =
+                (
+                  1 -
+                  distance /
+                  connectionDistance
+                ) *
+                0.16;
+
+
+              context.lineWidth =
+                0.75;
+
+
+              context.stroke();
+
+            }
+
+          }
+
+        }
+
+      }
+
+
+      function drawPointerConnections() {
+
+        if (
+          !pointer.active
+        ) {
+
+          return;
+
+        }
+
+
+        const pointerDistance =
+          165;
+
+
+        particles.forEach(
+          (
+            particle
+          ) => {
+
+            const distance =
+              Math.hypot(
+
+                particle.x -
+                  pointer.x,
+
+                particle.y -
+                  pointer.y
+
+              );
+
+
+            if (
+              distance <
+              pointerDistance
+            ) {
+
+              context.beginPath();
+
+
+              context.moveTo(
+
+                pointer.x,
+                pointer.y
+
+              );
+
+
+              context.lineTo(
+
+                particle.x,
+                particle.y
+
+              );
+
+
+              context.strokeStyle =
+                palette[1];
+
+
+              context.globalAlpha =
+                (
+                  1 -
+                  distance /
+                  pointerDistance
+                ) *
+                0.20;
+
+
+              context.lineWidth =
+                0.8;
+
+
+              context.stroke();
+
+            }
+
+          }
+        );
+
+      }
+
+
+      function drawParticles() {
+
+        particles.forEach(
+          (
+            particle
+          ) => {
+
+            context.beginPath();
+
+
+            context.arc(
+
+              particle.x,
+              particle.y,
+              particle.radius,
+              0,
+              Math.PI * 2
+
+            );
+
+
+            context.fillStyle =
+              palette[
+                particle.color
+              ];
+
+
+            context.globalAlpha =
+              0.42;
+
+
+            context.fill();
+
+          }
+        );
+
+      }
+
+
+      function drawFrame(
+        animate = true
+      ) {
+
+        context.clearRect(
+
+          0,
+          0,
+          width,
+          height
+
+        );
+
+
+        if (
+          animate
+        ) {
+
+          particles.forEach(
+            updateParticle
+          );
+
+        }
+
+
+        drawConnections();
+
+        drawPointerConnections();
+
+        drawParticles();
+
+
+        context.globalAlpha =
+          1;
+
+
+        if (
+          animate &&
+          !document.hidden
+        ) {
+
+          frameId =
+            requestAnimationFrame(
+              () =>
+                drawFrame(
+                  true
+                )
+            );
+
+        }
+
+      }
+
+
+      function start() {
+
+        if (
+          reducedMotion.matches ||
+          frameId !== null
+        ) {
+
+          return;
+
+        }
+
+
+        frameId =
+          requestAnimationFrame(
+            () =>
+              drawFrame(
+                true
+              )
+          );
+
+      }
+
+
+      function stop() {
+
+        if (
+          frameId !==
+          null
+        ) {
+
+          cancelAnimationFrame(
+            frameId
+          );
+
+
+          frameId =
+            null;
+
+        }
+
+      }
+
+
+      window.addEventListener(
+
+        "resize",
+
+        resizeCanvas,
+
+        {
+          passive: true
+        }
+
+      );
+
+
+      window.addEventListener(
+
+        "pointermove",
+
+        (
+          event
+        ) => {
+
+          pointer.x =
+            event.clientX;
+
+
+          pointer.y =
+            event.clientY;
+
+
+          pointer.active =
+            event.pointerType !==
+            "touch";
+
+        },
+
+        {
+          passive: true
+        }
+
+      );
+
+
+      document.addEventListener(
+
+        "pointerleave",
+
+        () => {
+
+          pointer.active =
+            false;
+
+        }
+
+      );
+
+
+      document.addEventListener(
+
+        "visibilitychange",
+
+        () => {
+
+          if (
+            document.hidden
+          ) {
+
+            stop();
+
+          }
+
+          else if (
+            !reducedMotion.matches
+          ) {
+
+            start();
+
+          }
+
+        }
+
+      );
+
+
+      refreshPalette();
+
+      resizeCanvas();
+
+
+      if (
+        !reducedMotion.matches
+      ) {
+
+        start();
+
+      }
+
+
+      return {
+
+        refreshPalette() {
+
+          refreshPalette();
+
+
+          if (
+            reducedMotion.matches
+          ) {
+
+            drawFrame(
+              false
+            );
+
+          }
+
+        }
+
+      };
+
+    }
+
+
+    /* =========================================================
+       3. THEME TOGGLE
+       ========================================================= */
+
+    function preferredTheme() {
+
+      const saved =
+        localStorage.getItem(
+          "tcrmc-theme"
+        );
+
+
+      if (
+        saved === "dark" ||
+        saved === "light"
+      ) {
+
+        return saved;
+
+      }
+
+
+      return window
+        .matchMedia(
+          "(prefers-color-scheme: light)"
+        )
+        .matches
+          ? "light"
+          : "dark";
+
+    }
+
+
+    function applyTheme(
+      theme
+    ) {
+
+      root.dataset.theme =
+        theme;
+
+
+      root.style.colorScheme =
+        theme;
+
+
+      themeToggle.setAttribute(
+
+        "aria-label",
+
+        theme ===
+          "dark"
+            ? "Switch to light theme"
+            : "Switch to dark theme"
+
+      );
+
+
+      if (
+        backgroundController
+      ) {
+
+        backgroundController
+          .refreshPalette();
+
+      }
+
+    }
+
+
+    applyTheme(
+      preferredTheme()
+    );
+
+
+    backgroundController =
+      createDynamicBackground();
+
+
+    themeToggle.addEventListener(
+
+      "click",
+
+      () => {
+
+        const nextTheme =
+          root.dataset.theme ===
+            "dark"
+              ? "light"
+              : "dark";
+
+
+        localStorage.setItem(
+          "tcrmc-theme",
+          nextTheme
+        );
+
+
+        applyTheme(
+          nextTheme
+        );
+
+      }
+
+    );
+
+
+    /* =========================================================
+       4. MOBILE MENU
+       ========================================================= */
+
+    function setMenu(
+      open
+    ) {
+
+      navMenu.classList.toggle(
+        "open",
+        open
+      );
+
+
+      menuToggle.setAttribute(
+        "aria-expanded",
+        String(
+          open
+        )
+      );
+
+
+      menuToggle.setAttribute(
+
+        "aria-label",
+
+        open
+          ? "Close navigation menu"
+          : "Open navigation menu"
+
+      );
+
+
+      menuIcon.textContent =
+        open
+          ? "×"
+          : "☰";
+
+
+      document.body.style.overflow =
+        open
+          ? "hidden"
+          : "";
+
+    }
+
+
+    menuToggle.addEventListener(
+
+      "click",
+
+      () => {
+
+        setMenu(
+
+          menuToggle.getAttribute(
+            "aria-expanded"
+          ) !==
+            "true"
+
+        );
+
+      }
+
+    );
+
+
+    navLinks.forEach(
+      (
+        link
+      ) => {
+
+        link.addEventListener(
+
+          "click",
+
+          () =>
+            setMenu(
+              false
+            )
+
+        );
+
+      }
+    );
+
+
+    document.addEventListener(
+
+      "keydown",
+
+      (
+        event
+      ) => {
+
+        if (
+          event.key ===
+          "Escape"
+        ) {
+
+          setMenu(
+            false
+          );
+
+        }
+
+      }
+
+    );
+
+
+    document.addEventListener(
+
+      "click",
+
+      (
+        event
+      ) => {
+
+        const open =
+          menuToggle.getAttribute(
+            "aria-expanded"
+          ) ===
+          "true";
+
+
+        if (
+          open &&
+          !navMenu.contains(
+            event.target
+          ) &&
+          !menuToggle.contains(
+            event.target
+          )
+        ) {
+
+          setMenu(
+            false
+          );
+
+        }
+
+      }
+
+    );
+
+
+    window.addEventListener(
+
+      "resize",
+
+      () => {
+
+        if (
+          window.innerWidth >
+          930
+        ) {
+
+          setMenu(
+            false
+          );
+
+        }
+
+      }
+
+    );
+
+
+    /* =========================================================
+       5. HEADER AND SCROLL-TOP BUTTON
+       ========================================================= */
+
+    function updateScrollUI() {
+
+      siteHeader.classList.toggle(
+
+        "scrolled",
+
+        window.scrollY >
+        24
+
+      );
+
+
+      scrollTopButton.classList.toggle(
+
+        "show",
+
+        window.scrollY >
+        700
+
+      );
+
+    }
+
+
+    window.addEventListener(
+
+      "scroll",
+
+      updateScrollUI,
+
+      {
+        passive: true
+      }
+
+    );
+
+
+    updateScrollUI();
+
+
+    scrollTopButton.addEventListener(
+
+      "click",
+
+      () => {
+
+        window.scrollTo({
+
+          top: 0,
+
+          behavior:
+            reducedMotion.matches
+              ? "auto"
+              : "smooth"
+
+        });
+
+      }
+
+    );
+
+
+    /* =========================================================
+       6. ACTIVE NAVIGATION SECTION
+       ========================================================= */
+
+    const sections =
+      [
+        ...document.querySelectorAll(
+          "main section[id]"
+        )
+      ];
+
+
+    function activateLink(
+      id
+    ) {
+
+      navLinks.forEach(
+        (
+          link
+        ) => {
+
+          const active =
+            link.getAttribute(
+              "href"
+            ) ===
+            `#${id}`;
+
+
+          link.classList.toggle(
+            "active",
+            active
+          );
+
+
+          if (
+            active
+          ) {
+
+            link.setAttribute(
+              "aria-current",
+              "page"
+            );
+
+          }
+
+          else {
+
+            link.removeAttribute(
+              "aria-current"
+            );
+
+          }
+
+        }
+      );
+
+    }
+
+
+    const sectionObserver =
+      new IntersectionObserver(
+
+        (
+          entries
+        ) => {
+
+          const visible =
+            entries
+
+              .filter(
+                (
+                  entry
+                ) =>
+                  entry.isIntersecting
+              )
+
+              .sort(
+                (
+                  first,
+                  second
+                ) =>
+                  second.intersectionRatio -
+                  first.intersectionRatio
+              );
+
+
+          if (
+            visible.length
+          ) {
+
+            activateLink(
+              visible[0]
+                .target
+                .id
+            );
+
+          }
+
+        },
+
+        {
+          rootMargin:
+            "-30% 0px -55% 0px",
+
+          threshold: [
+            0.05,
+            0.2,
+            0.45
+          ]
+        }
+
+      );
+
+
+    sections.forEach(
+      (
+        section
+      ) => {
+
+        sectionObserver.observe(
+          section
+        );
+
+      }
+    );
+
+
+    /* =========================================================
+       7. SCROLL REVEAL
+       ========================================================= */
+
+    const revealItems =
+      [
+        ...document.querySelectorAll(
+          ".reveal"
+        )
+      ];
+
+
+    if (
+      reducedMotion.matches
+    ) {
+
+      revealItems.forEach(
+        (
+          item
+        ) => {
+
+          item.classList.add(
+            "visible"
+          );
+
+        }
+      );
+
+    }
+
+    else {
+
+      const revealObserver =
+        new IntersectionObserver(
+
+          (
+            entries,
+            observer
+          ) => {
+
+            entries.forEach(
+              (
+                entry
+              ) => {
+
+                if (
+                  entry.isIntersecting
+                ) {
+
+                  entry.target.classList.add(
+                    "visible"
+                  );
+
+
+                  observer.unobserve(
+                    entry.target
+                  );
+
+                }
+
+              }
+            );
+
+          },
+
+          {
+            rootMargin:
+              "0px 0px -8% 0px",
+
+            threshold:
+              0.12
+          }
+
+        );
+
+
+      revealItems.forEach(
+        (
+          item,
+          index
+        ) => {
+
+          item.style.transitionDelay =
+            `${
+              Math.min(
+                index % 4,
+                3
+              ) *
+              70
+            }ms`;
+
+
+          revealObserver.observe(
+            item
+          );
+
+        }
+      );
+
+    }
+  </script>
 </body>
 </html>
