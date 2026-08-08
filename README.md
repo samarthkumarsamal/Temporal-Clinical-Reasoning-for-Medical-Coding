@@ -1,9 +1,8 @@
 # Temporal Clinical Reasoning for Medical Coding  
-CSCI 5541 – Natural Language Processing (Team Project)
 
 ---
 
-## Team Members
+## Stack Overflowers Team Members
 - Woochang Shin  
 - Jisun Kim  
 - Steven Hu  
@@ -195,7 +194,7 @@ By moving beyond static note-level approaches, our framework provides a more rea
   - Project report, documentation
     
 - **Samarth Kumar Samal**
-  - Model 1 (BioClinicalBERT) for joint ICD and CPT Prediction
-  - Model 2 (Longformer) for joint ICD and CPT Prediction
-  - Model 3 (Temporal / Joint Model) for joint ICD and CPT Prediction Support
+  - Model 1 (BioClinicalBERT) for joint ICD and CPT Prediction Developer
+  - Model 2 (Longformer) for joint ICD and CPT Prediction Developer
+  - Model 3 (Temporal / Joint Model) for joint ICD and CPT Prediction Developer
   - Project Support
