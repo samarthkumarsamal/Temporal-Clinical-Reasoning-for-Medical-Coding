@@ -1,0 +1,370 @@
+note_id,subject_id,hadm_id,note_type,note_seq,charttime,storetime,text
+10000032-RR-14,10000032,22595853.0,RR,14,2180-05-06 21:19:00,2180-05-06 23:32:00,"EXAMINATION:  CHEST (PA AND LAT)
+
+INDICATION:  ___ with new onset ascites  // eval for infection
+
+TECHNIQUE:  Chest PA and lateral
+
+COMPARISON:  None.
+
+FINDINGS: 
+
+There is no focal consolidation, pleural effusion or pneumothorax.  Bilateral
+nodular opacities that most likely represent nipple shadows. The
+cardiomediastinal silhouette is normal.  Clips project over the left lung,
+potentially within the breast. The imaged upper abdomen is unremarkable.
+Chronic deformity of the posterior left sixth and seventh ribs are noted.
+
+IMPRESSION: 
+
+No acute cardiopulmonary process.
+"
+10000032-RR-15,10000032,22595853.0,RR,15,2180-05-06 23:00:00,2180-05-06 23:26:00,"EXAMINATION:  LIVER OR GALLBLADDER US (SINGLE ORGAN)
+
+INDICATION:  ___ year-old female with cirrhosis, jaundice.
+
+TECHNIQUE:  Grey scale and color Doppler ultrasound images of the abdomen were
+obtained.
+
+COMPARISON:  None.
+
+FINDINGS: 
+
+LIVER: The liver is coarsened and nodular in echotexture. There is no focal
+liver mass. Main portal vein and its major branches are patent with normal
+hepatopetal flow.  The main hepatic artery shows normal arterial waveform. 
+There is a small amount of ascites.
+
+BILE DUCTS: There is no intrahepatic biliary dilation. The CBD measures 4 mm.
+
+GALLBLADDER: The gallbladder is contracted with a shadowing gallstone.
+
+PANCREAS: Imaged portion of the pancreas appears within normal limits, without
+masses or pancreatic ductal dilation, with portions of the pancreatic tail
+obscured by overlying bowel gas.
+
+SPLEEN: Normal echogenicity, measuring 13.5 cm.
+
+KIDNEYS: The right kidney measures 12.1 cm. The left kidney measures 13.4 cm.
+Normal cortical echogenicity and corticomedullary differentiation is seen
+bilaterally.
+RETROPERITONEUM: Visualized portions of aorta and IVC are within normal
+limits.
+
+IMPRESSION: 
+
+1. Nodular appearance of the liver compatible with cirrhosis. Signs of portal
+hypertension including small amount of ascites and splenomegaly.
+2.  Cholelithiasis.
+3.  Patent portal veins with normal hepatopetal flow.
+"
+10000032-RR-16,10000032,22595853.0,RR,16,2180-05-07 09:55:00,2180-05-07 11:15:00,"INDICATION:  ___ HCV cirrhosis c/b ascites, hiv on ART, h/o IVDU, COPD,
+bioplar, PTSD, presented from OSH ED with worsening abd distension over past
+week.  // SBP
+
+TECHNIQUE:  Ultrasound guided diagnostic and therapeutic paracentesis
+
+COMPARISON:  Abdominal ultrasound ___
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated
+moderateascites. A suitable target in the deepest pocket in the right lower
+quadrant was selected for paracentesis.
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and written informed consent was obtained.
+
+A preprocedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ catheter was advanced into the largest fluid pocket in the right
+lower quadrant and 1.5 L of serosanguinous fluid was removed.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.  A sample of the fluid was sent to the lab
+as requested.
+
+Dr. ___ attending radiologist, was present throughout the critical
+portions of the procedure.
+
+IMPRESSION: 
+
+Successful uncomplicated ultrasound guided diagnostic and therapeutic
+paracentesis yielding 1.5 L of serosanguineous fluid from the right lower
+quadrant.  Sample was sent to the lab as requested.
+"
+10000032-RR-18,10000032,,RR,18,2180-06-03 12:46:00,2180-06-03 14:01:00,"EXAMINATION:  Ultrasound-guided paracentesis.
+
+INDICATION:  ___ year old woman with cirrhosis, ascites despite diuretics  //
+Please do LVP with albumin post per protocol
+
+TECHNIQUE:  Ultrasound guided therapeutic paracentesis
+
+COMPARISON:  ___.
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated
+moderateascites. A suitable target in the deepest pocket in the right lower
+quadrant was selected for paracentesis.
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and written informed consent was obtained.
+
+A preprocedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ catheter was advanced into the largest fluid pocket in the right
+lower quadrant and 1.75 L of clear, straw-coloredfluid was removed.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.
+
+Dr. ___ attending radiologist, personally supervised the procedure,
+subsequently reviewing and has agreed with the preliminary findings.
+
+IMPRESSION: 
+
+Uneventful therapeutic paracentesis yielding 1.75 L of clear, straw-colored
+ascitic fluid.
+"
+10000032-RR-20,10000032,,RR,20,2180-07-08 13:18:00,2180-07-08 14:15:00,"EXAMINATION:  Paracentesis
+
+INDICATION:  ___ year old woman with cirrhosis, ascites despite diuretics  //
+Please do LVP with albumin post per protocol
+
+TECHNIQUE:  Ultrasound guided therapeutic paracentesis
+
+COMPARISON:  Paracentesis on ___
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated a large
+amount of ascites. A suitable target in the deepest pocket in the right lower
+quadrant was selected for paracentesis.
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and written informed consent was obtained.
+
+A preprocedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ catheter was advanced into the largest fluid pocket in the right
+lower quadrant and 4.75 L of slightly cloudy, blood tinged, yellow fluid was
+removed, similar to the prior exam in appearance.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.
+
+Dr. ___ supervised the trainee during the key components of the
+procedure and reviewed and agrees with the trainee's findings.
+
+IMPRESSION: 
+
+4.75 L of slightly cloudy, blood tinged fluid was removed from the right lower
+quadrant without complication.
+"
+10000032-RR-21,10000032,,RR,21,2180-06-30 08:16:00,2180-06-30 12:58:00,"EXAMINATION:  ULTRASOUND INTERVENTIONAL PROCEDURE
+
+INDICATION:  ___ year old woman with cirrhosis, ascites despite diuretics  //
+Please do LVP with albumin post per protocol. Please schedule on ___ or
+___
+
+TECHNIQUE:  Ultrasound guided therapeutic paracentesis
+
+COMPARISON:  ___.
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated
+moderateascites. A suitable target in the deepest pocket in the right lower
+quadrant was selected for paracentesis.
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and existing annual signed consent was reviewed.
+
+A preprocedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ catheter was advanced into the largest fluid pocket in the right
+lower quadrant and 3.0 L of slightly cloudy, blood-tinged, yellow fluid was
+removed.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.
+
+Dr. ___ supervised the trainee during the key components of the
+procedure and reviewed and agrees with the trainee's findings.
+
+IMPRESSION: 
+
+Ultrasound-guided therapeutic paracentesis with removal of 3.0 L of ascitic
+fluid.
+"
+10000032-RR-22,10000032,22841357.0,RR,22,2180-06-26 17:15:00,2180-06-26 19:28:00,"EXAMINATION:  LIVER OR GALLBLADDER US (SINGLE ORGAN)
+
+INDICATION:  History: ___ with cirrhosis, increased abdominal pain
+
+TECHNIQUE:  Grey scale and color Doppler ultrasound images of the right upper
+quadrant were obtained.
+
+COMPARISON:  Abdominal ultrasound from ___
+
+FINDINGS: 
+
+The liver is extremely course and nodular in echotexture similar to the prior
+examination consistent with a history of cirrhosis. Parenchymal heterogeneity
+limits detection focal lesions. Note is made of a dominant nodule measuring
+3.3 x 2.7 cm exerting mass effect on the gallbladder, relatively unchanged
+from the prior examination. There is no intrahepatic biliary dilation. The CBD
+measures 5 mm. Main, right anterior and right posterior portal veins are
+patent with hepatopetal flow. The gallbladder is normal without stones or wall
+thickening. Pancreas is not well evaluated. The spleen measures 11.9 cm in
+length and has homogeneous echotexture. There is moderate ascites throughout
+the abdomen.
+
+IMPRESSION: 
+
+1. Extremely coarse and nodular liver echotexture consistent with cirrhosis.
+
+2.  Moderate ascites.
+
+3.  Patent portal vein.
+"
+10000032-RR-23,10000032,22841357.0,RR,23,2180-06-26 17:17:00,2180-06-26 17:28:00,"EXAMINATION:  CHEST (PA AND LAT)
+
+INDICATION:  History: ___ with shortness of breath
+
+TECHNIQUE:  Chest PA and lateral
+
+COMPARISON:  ___
+
+FINDINGS: 
+
+The cardiac, mediastinal and hilar contours are normal. Pulmonary vasculature
+is normal.  Lungs are clear. No pleural effusion or pneumothorax is present.
+Multiple clips are again seen projecting over the left breast.  Remote
+left-sided rib fractures are also re- demonstrated.
+
+IMPRESSION: 
+
+No acute cardiopulmonary abnormality.
+"
+10000032-RR-24,10000032,,RR,24,2180-07-22 12:40:00,2180-07-22 18:33:00,"EXAMINATION:  Ultrasound-guided paracentesis.
+
+INDICATION:  A ___ woman with cirrhosis and recurrent ascites
+presenting for therapeutic paracentesis.
+
+TECHNIQUE:  Ultrasound guided therapeutic paracentesis.
+
+COMPARISON:  Ultrasound-guided paracentesis performed ___.
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated
+moderateascites. A suitable target in the deepest pocket in the right lower
+quadrant was selected for paracentesis.
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and existing annual signed consent was reviewed.
+
+A pre-procedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ ___ catheter was advanced into the largest fluid pocket in the
+right lower quadrant and 1.9 L of cloudy, pink-tinged ascites fluid was
+removed.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.
+
+Dr. ___ was present for and personally supervised the entirety of the
+procedure and reviewed and agrees with the trainee's findings.
+
+IMPRESSION: 
+
+Uncomplicated ultrasound-guided therapeutic paracentesis via a right lower
+quadrant approach, yielding 1.9 L of cloudy, pink-tinged ascites fluid.
+"
+10000032-RR-27,10000032,,RR,27,2180-07-12 13:35:00,2180-07-12 17:29:00,"EXAMINATION:  Ultrasound-guided paracentesis.
+
+INDICATION:  A ___ woman with cirrhosis recurrent ascites, presenting
+for large-volume paracentesis.
+
+TECHNIQUE:  Ultrasound-guided therapeutic paracentesis.
+
+COMPARISON:  Ultrasound-guided paracentesis performed ___.
+
+FINDINGS: 
+
+Limited grayscale ultrasound imaging of the abdomen demonstrated a large
+amount of ascites. A suitable target in the deepest pocket in the right flank
+was selected for paracentesis.
+
+Of note, several transverse images of the right lower quadrant revealed a 1.1
+x 0.9 cm nodular isoechoic structure along the peritoneal surface
+anterolaterally without any apparent vascularity, of indeterminate
+significance.  This is probably unchanged since ultrasound obtained ___. This may represents sequela from prior paracenteses. If clinical concern
+for malignancy exists, CT could be obtained for further evaluation (or
+reference can be made to outside hospital CT or MR examinations if such
+exist).
+
+PROCEDURE:  The procedure, risks, benefits and alternatives were discussed
+with the patient and existing annual signed consent was reviewed.
+
+A pre-procedure time-out was performed discussing the planned procedure,
+confirming the patient's identity with 3 identifiers, and reviewing a
+checklist per ___ protocol.
+
+Under ultrasound guidance, an entrance site was selected and the skin was
+prepped and draped in the usual sterile fashion. 1% lidocaine was instilled
+for local anesthesia.
+
+A 5 ___ catheter was advanced into the largest fluid pocket in the right
+flank and 4.3 L of cloudy, pink-tinged straw-colored fluid was removed. Two
+running 0 silk stitches were used to help secure entry site and prevent
+against ascites leak.
+
+The patient tolerated the procedure well without immediate complication.
+Estimated blood loss was minimal.
+
+Dr. ___ supervised the trainee during the key components of the
+procedure and reviewed and agrees with the trainee's findings.
+
+IMPRESSION:
+
+
+1. Uncomplicated ultrasound-guided therapeutic paracentesis via a right flank
+approach.
+2. 1.1 x 0.9 cm isoechoic nodule seen on the parietal peritoneal surface
+underlying the right abdominal wall, may relate to sequela from prior
+paracenteses, probably unchanged since ___. If concern for malignancy
+exists, CT may be obtained (or reference can be made to outside hospital CT or
+MR examinations if such exist).
+"
